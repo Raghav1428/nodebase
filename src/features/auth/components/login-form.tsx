@@ -10,8 +10,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import z, { email } from "zod";
+import z from "zod";
 import { authClient } from "@/lib/auth-client";
+import Image from "next/image";
 
 const LoginSchema = z.object({
     email: z.email("Please enter a valid email address"),
@@ -71,6 +72,7 @@ export function LoginForm() {
                                         className="w-fulll"
                                         type="button"
                                         disabled={isPending}>
+                                        <Image src="/logos/github.svg" alt="Github" width={20} height={20} />
                                         Continue with GitHub
                                     </Button>
                                     <Button 
@@ -78,6 +80,7 @@ export function LoginForm() {
                                         className="w-fulll"
                                         type="button"
                                         disabled={isPending}>
+                                        <Image src="/logos/google.svg" alt="Google" width={20} height={20} />
                                         Continue with Google
                                     </Button>
                                 </div>

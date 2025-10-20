@@ -5,11 +5,8 @@ const Page = async() => {
 
     await requireNoAuth();
 
-    return(
-        <div>
-            <RegisterForm />
-        </div>
-    );
+    return <RegisterForm />;
+    
 };
 
 export default Page;
