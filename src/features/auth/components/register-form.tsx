@@ -17,7 +17,7 @@ import { ro } from "date-fns/locale";
 
 const RegisterSchema = z.object({
     email: z.email("Please enter a valid email address"),
-    password: z.string().min(1,"Password is required"),
+    password: z.string().min(8,"Password is required"),
     confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
