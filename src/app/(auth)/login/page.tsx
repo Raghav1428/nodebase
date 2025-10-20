@@ -4,12 +4,8 @@ import { requireNoAuth } from "@/lib/auth-utils";
 const Page = async() => {
 
     await requireNoAuth();
-
-    return(
-        <div>
-            <LoginForm />
-        </div>
-    );
+    
+    return <LoginForm />;
 };
 
 export default Page;
