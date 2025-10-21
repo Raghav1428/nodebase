@@ -20,18 +20,33 @@ export const execute = inngest.createFunction(
         model: google("gemini-2.5-flash"),
         system: "You are a helpful assistant.",
         prompt: "What is 2+2 ?",
+        experimental_telemetry: {
+          isEnabled: true,
+          recordInputs: true,
+          recordOutputs: true,
+        },
     });
 
     const { steps: opeanaiSteps } = await step.ai.wrap("openai-generate-text", generateText, {
         model: openai("gpt-3.5-turbo"),
         system: "You are a helpful assistant.",
         prompt: "What is 2+2 ?",
+        experimental_telemetry: {
+          isEnabled: true,
+          recordInputs: true,
+          recordOutputs: true,
+        },
     });
 
     const { steps: anthropoicSteps } = await step.ai.wrap("anthropic-generate-text", generateText, {
         model: anthropic("claude-3-5-haiku-20241022"),
         system: "You are a helpful assistant.",
         prompt: "What is 2+2 ?",
+        experimental_telemetry: {
+          isEnabled: true,
+          recordInputs: true,
+          recordOutputs: true,
+        },
     });
 
     return {
