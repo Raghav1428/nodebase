@@ -1,9 +1,7 @@
 "use client";
 
-import { boolean } from "zod";
 import { useCreateWorkflow, useSuspenseWorkflows } from "../hooks/use-workflows"
 import { EntityContainer, EntityHeader } from "@/components/entity-components";
-import { err } from "inngest/types";
 import { useUpgradeModal } from "@/hooks/use-upgrade-modal";
 import { useRouter } from "next/navigation";
 
@@ -26,7 +24,7 @@ export const WorkflowsHeader = ({ disabled }: {disabled?: boolean}) => {
     const handleCreate = () => {
         createWorkflow.mutate(undefined, {
             onSuccess: (data) => {
-                router.push(`workflows/${data.id}`);
+                router.push(`/workflows/${data.id}`);
             },
             onError: (error) => {
                 handleError(error);

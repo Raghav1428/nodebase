@@ -3,7 +3,7 @@ import prisma from "@/lib/db";
 import { createTRPCRouter, premiumProcedure, protectedProcedure } from "@/trpc/init";
 import z from "zod";
 
-export const workkflowsRouter = createTRPCRouter({
+export const workflowsRouter = createTRPCRouter({
     create: premiumProcedure.mutation(({ ctx }) => {
         return prisma.workflow.create({
             data: {
