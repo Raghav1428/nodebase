@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 interface useEntitySearchProps<T extends { search: string; page: number }> {
     params: T;
     setParams: (params: T) => void;
-    debouceMs?: number;
+    debounceMs?: number;
 }
 
 export function useEntitySearch<T extends {
@@ -13,7 +13,7 @@ export function useEntitySearch<T extends {
 }> ({
     params,
     setParams,
-    debouceMs = 500
+    debounceMs = 500
 }: useEntitySearchProps<T>) {
     const [localSearch, setLocalSearch] = useState(params.search);
 
@@ -35,10 +35,10 @@ export function useEntitySearch<T extends {
                     page: PAGINATION.DEFAULT_PAGE,
                 })
             }
-        }, debouceMs)
+        }, debounceMs)
 
         return () => clearTimeout(timer);
-    }, [localSearch, params, setParams, debouceMs]);
+    }, [localSearch, params, setParams, debounceMs]);
 
     useEffect(() => {
         setLocalSearch(params.search)

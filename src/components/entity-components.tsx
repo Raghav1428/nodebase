@@ -97,7 +97,7 @@ export const EntitySearch = ({
         <div className="relative ml-auto">
             <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input 
-                className="max-w=[200px] bg-background shadow-none border-border pl-8"
+                className="max-w-[200px] bg-background shadow-none border-border pl-8"
                 placeholder={placeholder}
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
