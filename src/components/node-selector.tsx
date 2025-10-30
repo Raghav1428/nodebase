@@ -35,10 +35,10 @@ const triggerNodes: NodeTypeOption[] = [
     },
 ];
 
-const executtionNodes: NodeTypeOption[] =[
+const executionNodes: NodeTypeOption[] =[
     {
         type: NodeType.HTTP_REQUEST,
-        label: "HTTP reguest",
+        label: "HTTP request",
         description: "Makes a HTTP request",
         icon: GlobeIcon,
     },
@@ -70,7 +70,7 @@ export function NodeSelector ({
         }
 
         setNodes((nodes) => {
-            const hasInititalTrigger = nodes.some(
+            const hasInitialTrigger = nodes.some(
                 (node) => node.type === NodeType.INITIAL,
             );
             const centerX = window.innerWidth / 2;
@@ -78,7 +78,7 @@ export function NodeSelector ({
 
             const flowPosition = screenToFlowPosition({
                 x: centerX + (Math.random() - 0.5)*200,
-                y: centerY + + (Math.random() - 0.5)*200,
+                y: centerY + (Math.random() - 0.5)*200,
             })
 
             const newNode = {
@@ -88,7 +88,7 @@ export function NodeSelector ({
                 type: selection.type
             };
 
-            if(hasInititalTrigger) {
+            if(hasInitialTrigger) {
                 return [newNode];
             }
             return [...nodes, newNode];
@@ -142,7 +142,7 @@ export function NodeSelector ({
                 </div>
                 <Separator />
                 <div>
-                    {executtionNodes.map((nodeType) => {
+                    {executionNodes.map((nodeType) => {
                         const Icon = nodeType.icon;
                         return (
                             <div
