@@ -7,15 +7,36 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbS
 import { Input } from "@/components/ui/input";
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { useSuspenseWorkflow, useUpdateWorkflowName } from "@/features/workflows/hooks/use-workflows";
+import { useSuspenseWorkflow, useUpdateWorkflow, useUpdateWorkflowName } from "@/features/workflows/hooks/use-workflows";
+import { useAtomValue } from "jotai";
+import { editorAtom } from "../store/atoms";
+import { id } from "date-fns/locale";
 
 export const EditorSaveButton = ({ workflowId }: {workflowId: string}) => {
+
+    const editor = useAtomValue(editorAtom);
+    const saveWorkflow = useUpdateWorkflow();
+
+    const handleSave = () => {
+        if(!editor) {
+            return;
+        }
+        const nodes = editor.getNodes();
+        const edges = editor.getEdges();
+
+        saveWorkflow.mutate({
+            id: workflowId,
+            nodes,
+            edges,
+        })
+    }
+
     return (
         <div className="ml-auto">
             <Button
                 size="sm"
-                onClick={() => {}}
-                disabled={false}
+                onClick={handleSave}
+                disabled={saveWorkflow.isPending}
             >
                 <SaveIcon className="size-4" />
                 Save
