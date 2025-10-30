@@ -50,6 +50,16 @@ interface NodeSelectorProps {
     children: React.ReactNode;
 };
 
+/**
+ * Renders a right-side sheet UI that lets the user pick a node type to add to the workflow.
+ *
+ * Selecting a node will add a new node to the React Flow instance: if an `INITIAL` node exists the selection replaces all nodes, otherwise it appends the new node positioned near the center of the viewport. Selecting a `MANUAL_TRIGGER` will show an error and abort if a manual trigger already exists.
+ *
+ * @param open - Whether the sheet is open
+ * @param onOpenChange - Callback invoked with the new open state when the sheet is opened or closed
+ * @param children - Trigger element that opens the sheet when interacted with
+ * @returns The NodeSelector sheet component JSX
+ */
 export function NodeSelector ({
     open,
     onOpenChange,
