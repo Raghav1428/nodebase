@@ -37,7 +37,7 @@ const formSchema = z.object({
         .string()
         .min(1, "Variable name is required")
         .regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, { message: "Variable name must start with a letter or underscore and can only contain letters, numbers, and underscores" }),
-    endpoint: z.string().url({ message: "Please enter a valid URL" }),
+    endpoint: z.string().min(1, { message: "Please enter a valid URL" }),
     method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]),
     body: z.string().optional(),
     // TODO .refine() JSON5
