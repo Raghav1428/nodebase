@@ -106,13 +106,13 @@ export const GoogleFormTriggerDialog = ({
                             Copy Google Apps Script
                         </Button>
                         <p className="text-sm text-muted-foreground">
-                            This script include your webhook URL and handles form submissions.
+                            This script includes your webhook URL and handles form submissions.
                         </p>
                     </div>
 
                     <div className="rounded-lg bg-muted p-4 space-y-2">
-                        <h4 className="font-medium texxt-sm">Available Variables</h4>
-                        <ul className="text-sm test-muted-foreground space-y-1">
+                        <h4 className="font-medium text-sm">Available Variables</h4>
+                        <ul className="text-sm text-muted-foreground space-y-1">
                             <li>
                                 <code className="bg-background px-1 py-0.5 rounded">
                                     {"{{googleForm.respondentEmail}}"}

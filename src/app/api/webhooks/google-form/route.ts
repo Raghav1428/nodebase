@@ -26,8 +26,12 @@ export async function POST(req: NextRequest) {
                 googleForm: formData,
             },
         });
+
+        // add success response
+        return NextResponse.json({ success: true, message: "Google Form trigger webhook processed successfully" }, { status: 200 });
+        
     } catch (error) {
         console.error("Error in Google Form trigger webhook:", error);
-        return NextResponse.json({ success: false, error: "Failed  to process Google Form submission" }, { status: 500 });
+        return NextResponse.json({ success: false, error: "Failed to process Google Form submission" }, { status: 500 });
     }
 }
