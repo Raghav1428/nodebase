@@ -4,6 +4,8 @@ import { getSubscriptionToken, type Realtime } from "@inngest/realtime";
 import { geminiChannel } from "@/inngest/channels/gemini";
 import { inngest } from "@/inngest/client";
 import prisma from "@/lib/db";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 export type GeminiToken = Realtime.Token<
     typeof geminiChannel,
@@ -21,16 +23,27 @@ export async function fetchGeminiRealtimeToken(): Promise<GeminiToken> {
 
 export async function getAvailableGeminiModels(credentialId: string): Promise<string[]> {
     
-    const credential = await prisma.credential.findUnique({
-    where: { id: credentialId },
-  });
+    const session = await auth.api.getSession({ headers: await headers() });
+    if(!session?.user?.id){
+        console.warn("Gemini models: user not found");
+        return ["gemini-2.0-flash"]; // fallback
+    }
 
-  if (!credential) {
-    console.warn("Gemini models: credential not found");
-    return ["gemini-2.0-flash"]; // fallback
-  }
+    const credential = await prisma.credential.findFirst({
+        where: { id: credentialId, userId: session.user.id },
+    });
 
-  const apiKey = credential.value;
+    if (!credential) {
+        console.warn("Gemini models: credential not found");
+        return ["gemini-2.0-flash"]; // fallback
+    }
+
+    const apiKey = credential.value;
+
+    if (!apiKey) {
+        console.warn("Gemini models: credential has no value");
+        return ["gemini-2.0-flash"];
+    }
 
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {

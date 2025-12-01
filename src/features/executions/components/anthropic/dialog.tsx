@@ -80,18 +80,6 @@ export const AnthropicDialog = ({
         },
     });
 
-    useEffect(() => {
-        if (open) {
-            form.reset({
-                variableName: defaultValues.variableName || '',
-                credentialId: defaultValues.credentialId || '',
-                model: defaultValues.model || "claude-sonnet-4-20250514",
-                systemPrompt: defaultValues.systemPrompt || '',
-                userPrompt: defaultValues.userPrompt || '',
-            });
-        }
-    }, [open, defaultValues, form])
-
     const selectedCredentialId = form.watch("credentialId");
     const watchVariableName = form.watch("variableName") || "myAnthropicCall";
 

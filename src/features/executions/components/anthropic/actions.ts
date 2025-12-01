@@ -4,6 +4,8 @@ import { getSubscriptionToken, type Realtime } from "@inngest/realtime";
 import { inngest } from "@/inngest/client";
 import { anthropicChannel } from "@/inngest/channels/anthropic";
 import prisma from "@/lib/db";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 export type AnthropicToken = Realtime.Token<
   typeof anthropicChannel,
@@ -21,16 +23,27 @@ export async function fetchAnthropicRealtimeToken(): Promise<AnthropicToken> {
 
 export async function getAvailableAnthropicModels(credentialId: string): Promise<string[]> {
   
-  const credential = await prisma.credential.findUnique({
-    where: { id: credentialId },
-  });
+  const session = await auth.api.getSession({ headers: await headers() });
+    if(!session?.user?.id){
+        console.warn("Anthropic models: user not found");
+        return ["claude-sonnet-4-20250514"]; // fallback
+    }
 
-  if (!credential) {
-    console.warn("Gemini models: credential not found");
-    return ["gemini-2.0-flash"]; // fallback
-  }
+    const credential = await prisma.credential.findFirst({
+        where: { id: credentialId, userId: session.user.id },
+    });
 
-  const apiKey = credential.value;
+    if (!credential) {
+        console.warn("Anthropic models: credential not found");
+        return ["claude-sonnet-4-20250514"]; // fallback
+    }
+
+    const apiKey = credential.value;
+
+    if (!apiKey) {
+        console.warn("Anthropic models: credential has no value");
+        return ["claude-sonnet-4-20250514"];
+    }
 
   try {
     const response = await fetch("https://api.anthropic.com/v1/models", {

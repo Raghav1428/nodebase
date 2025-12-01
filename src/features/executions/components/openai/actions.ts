@@ -4,6 +4,8 @@ import { getSubscriptionToken, type Realtime } from "@inngest/realtime";
 import { openAIChannel } from "@/inngest/channels/openai";
 import { inngest } from "@/inngest/client";
 import prisma from "@/lib/db";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 export type OpenAIToken = Realtime.Token<
   typeof openAIChannel,
@@ -21,16 +23,27 @@ export async function fetchOpenAIRealtimeToken(): Promise<OpenAIToken> {
 
 export async function getAvailableOpenAIModels(credentialId: string): Promise<string[]> {
   
-  const credential = await prisma.credential.findUnique({
-    where: { id: credentialId },
-  });
+  const session = await auth.api.getSession({ headers: await headers() });
+    if(!session?.user?.id){
+        console.warn("OpenAI models: user not found");
+        return ["gpt-4o-mini"]; // fallback
+    }
 
-  if (!credential) {
-    console.warn("Gemini models: credential not found");
-    return ["gemini-2.0-flash"]; // fallback
-  }
+    const credential = await prisma.credential.findFirst({
+        where: { id: credentialId, userId: session.user.id },
+    });
 
-  const apiKey = credential.value;
+    if (!credential) {
+        console.warn("OpenAI models: credential not found");
+        return ["gpt-4o-mini"]; // fallback
+    }
+
+    const apiKey = credential.value;
+
+    if (!apiKey) {
+        console.warn("OpenAI models: credential has no value");
+        return ["gpt-4o-mini"];
+    }
 
   try {
     const response = await fetch("https://api.openai.com/v1/models", {

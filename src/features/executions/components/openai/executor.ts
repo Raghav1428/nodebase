@@ -89,7 +89,7 @@ export const openaiExecutor: NodeExecutor<OpenAIData> = async ({ data, nodeId, u
             "openai-generate-text",
             generateText,
             {
-                model: openai(data.model || "gpt-4"),
+                model: openai(data.model || "gpt-4o-mini"),
                 system: systemPrompt,
                 prompt: userPrompt,
                 experimental_telemetry: {
