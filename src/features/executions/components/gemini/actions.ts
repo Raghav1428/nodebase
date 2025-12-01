@@ -3,6 +3,9 @@
 import { getSubscriptionToken, type Realtime } from "@inngest/realtime";
 import { geminiChannel } from "@/inngest/channels/gemini";
 import { inngest } from "@/inngest/client";
+import prisma from "@/lib/db";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 export type GeminiToken = Realtime.Token<
     typeof geminiChannel,
@@ -18,12 +21,28 @@ export async function fetchGeminiRealtimeToken(): Promise<GeminiToken> {
     return token;
 };
 
-export async function getAvailableGeminiModels(): Promise<string[]> {
-    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+export async function getAvailableGeminiModels(credentialId: string): Promise<string[]> {
     
+    const session = await auth.api.getSession({ headers: await headers() });
+    if(!session?.user?.id){
+        console.warn("Gemini models: user not found");
+        return ["gemini-2.0-flash"]; // fallback
+    }
+
+    const credential = await prisma.credential.findFirst({
+        where: { id: credentialId, userId: session.user.id },
+    });
+
+    if (!credential) {
+        console.warn("Gemini models: credential not found");
+        return ["gemini-2.0-flash"]; // fallback
+    }
+
+    const apiKey = credential.value;
+
     if (!apiKey) {
-        console.warn("Google Gemini Credentials missing");
-        return ["gemini-2.0-flash"]; // Fallback
+        console.warn("Gemini models: credential has no value");
+        return ["gemini-2.0-flash"];
     }
 
     try {

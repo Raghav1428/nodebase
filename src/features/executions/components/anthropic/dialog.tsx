@@ -80,39 +80,58 @@ export const AnthropicDialog = ({
         },
     });
 
-    useEffect(() => {
-        const loadModels = async () => {
-            setIsLoadingModels(true);
-            try {
-                const fetchedModels = await getAvailableAnthropicModels();
-                setModels(fetchedModels);
-                
-                // If the current default value isn't in the list, default to the first available
-                if (fetchedModels.length > 0 && !form.getValues("model")) {
-                    form.setValue("model", fetchedModels[0]);
-                }
-            } catch (err) {
-                console.error("Failed to load models", err);
-            } finally {
-                setIsLoadingModels(false);
-            }
-        };
-        loadModels();
-    }, [form]);
+    const selectedCredentialId = form.watch("credentialId");
+    const watchVariableName = form.watch("variableName") || "myAnthropicCall";
 
     useEffect(() => {
         if (open) {
             form.reset({
-                variableName: defaultValues.variableName || '',
-                credentialId: defaultValues.credentialId || '',
-                model: defaultValues.model || "claude-sonnet-4-20250514",
-                systemPrompt: defaultValues.systemPrompt || '',
-                userPrompt: defaultValues.userPrompt || '',
+                variableName: defaultValues.variableName || "",
+                credentialId:
+                    defaultValues.credentialId ||
+                    credentials?.[0]?.id || // optional: auto-select first credential
+                    "",
+                model: defaultValues.model || "",
+                systemPrompt: defaultValues.systemPrompt || "",
+                userPrompt: defaultValues.userPrompt || "",
             });
         }
-    }, [open, defaultValues, form])
+    }, [open, defaultValues, form, credentials]);
 
-    const watchVariableName = form.watch("variableName") || "myAnthropicCall";
+    useEffect(() => {
+        const loadModels = async (credentialId: string) => {
+            setIsLoadingModels(true);
+            try {
+                const fetchedModels = await getAvailableAnthropicModels(
+                    credentialId,
+                );
+                setModels(fetchedModels);
+
+                const currentModel = form.getValues("model");
+
+                // If no model or current not in list, default to first available
+                if (
+                    fetchedModels.length > 0 &&
+                    (!currentModel || !fetchedModels.includes(currentModel))
+                ) {
+                    form.setValue("model", fetchedModels[0]);
+                }
+            } catch (err) {
+                console.error("Failed to load models", err);
+                setModels([]);
+            } finally {
+                setIsLoadingModels(false);
+            }
+        };
+
+        if (selectedCredentialId) {
+            loadModels(selectedCredentialId);
+        } else {
+            // if credential cleared, also clear models + model field
+            setModels([]);
+            form.setValue("model", "");
+        }
+    }, [selectedCredentialId, form]);
 
     const handleSubmit = (values: AnthropicFormValues) => {
         onSubmit(values);
