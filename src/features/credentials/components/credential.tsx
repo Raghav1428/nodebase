@@ -73,11 +73,15 @@ export const CredentialForm = ({
 
     const onSubmit = async (values: FormValues) => {
         if (isEdit && initialData?.id) {
-            await updateCredential.mutateAsync({
-                id: initialData?.id,
-                ...values,
-            });
-            router.push("/credentials");
+            try {
+                await updateCredential.mutateAsync({
+                    id: initialData?.id,
+                    ...values,
+                });
+                router.push("/credentials");
+            } catch (error) {
+                handleError(error);
+            }
         } else {
             await createCredential.mutateAsync(values,{
                 onSuccess: () => {
