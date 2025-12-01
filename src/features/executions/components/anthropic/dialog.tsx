@@ -67,7 +67,7 @@ export const AnthropicDialog = ({
         resolver: zodResolver(formSchema),
         defaultValues: {
             variableName: defaultValues.variableName || '',
-            model: defaultValues.model || "claude-3-5-sonnet",
+            model: defaultValues.model || "claude-sonnet-4-20250514",
             systemPrompt: defaultValues.systemPrompt || '',
             userPrompt: defaultValues.userPrompt || '',
         },
@@ -91,7 +91,7 @@ export const AnthropicDialog = ({
             }
         };
         loadModels();
-    }, []);
+    }, [form]);
 
     useEffect(() => {
         if (open) {
@@ -153,7 +153,7 @@ export const AnthropicDialog = ({
                                     <FormLabel>Model</FormLabel>
                                     <Select 
                                         onValueChange={field.onChange}
-                                        defaultValue={field.value}
+                                        value={field.value}
                                     >
                                         <FormControl>
                                             <SelectTrigger className="w-full">
@@ -205,7 +205,7 @@ export const AnthropicDialog = ({
                                 <FormLabel>User Prompt</FormLabel>
                                 <FormControl>
                                     <Textarea 
-                                        placeholder="Summarize the following text: {{json httpResonse.data}}"
+                                        placeholder="Summarize the following text: {{json httpResponse.data}}"
                                         {...field} 
                                         className="min-h-[100px] font-mono text-sm"
                                         />

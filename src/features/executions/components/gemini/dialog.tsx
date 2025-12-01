@@ -91,7 +91,7 @@ export const GeminiDialog = ({
             }
         };
         loadModels();
-    }, []);
+    }, [form]);
 
     useEffect(() => {
         if (open) {
@@ -153,7 +153,7 @@ export const GeminiDialog = ({
                                     <FormLabel>Model</FormLabel>
                                     <Select 
                                         onValueChange={field.onChange}
-                                        defaultValue={field.value}
+                                        value={field.value}
                                     >
                                         <FormControl>
                                             <SelectTrigger className="w-full">
@@ -205,7 +205,7 @@ export const GeminiDialog = ({
                                 <FormLabel>User Prompt</FormLabel>
                                 <FormControl>
                                     <Textarea 
-                                        placeholder="Summarize the following text: {{json httpResonse.data}}"
+                                        placeholder="Summarize the following text: {{json httpResponse.data}}"
                                         {...field} 
                                         className="min-h-[100px] font-mono text-sm"
                                         />
