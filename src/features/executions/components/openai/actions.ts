@@ -3,6 +3,7 @@
 import { getSubscriptionToken, type Realtime } from "@inngest/realtime";
 import { openAIChannel } from "@/inngest/channels/openai";
 import { inngest } from "@/inngest/client";
+import prisma from "@/lib/db";
 
 export type OpenAIToken = Realtime.Token<
   typeof openAIChannel,
@@ -18,13 +19,18 @@ export async function fetchOpenAIRealtimeToken(): Promise<OpenAIToken> {
   return token;
 }
 
-export async function getAvailableOpenAIModels(): Promise<string[]> {
-  const apiKey = process.env.OPENAI_API_KEY;
+export async function getAvailableOpenAIModels(credentialId: string): Promise<string[]> {
+  
+  const credential = await prisma.credential.findUnique({
+    where: { id: credentialId },
+  });
 
-  if (!apiKey) {
-    console.warn("OpenAI API key missing");
-    return ["gpt-4o-mini"]; // Fallback
+  if (!credential) {
+    console.warn("Gemini models: credential not found");
+    return ["gemini-2.0-flash"]; // fallback
   }
+
+  const apiKey = credential.value;
 
   try {
     const response = await fetch("https://api.openai.com/v1/models", {
