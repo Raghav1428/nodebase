@@ -32,6 +32,9 @@ import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { getAvailableGeminiModels } from "./actions";
+import { useCredentialByType } from "@/features/credentials/hooks/use-credentials";
+import { CredentialType } from "@/generated/prisma";
+import Image from "next/image";
 
 
 const formSchema = z.object({
@@ -39,6 +42,7 @@ const formSchema = z.object({
         .string()
         .min(1, "Variable name is required")
         .regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, { message: "Variable name must start with a letter or underscore and can only contain letters, numbers, and underscores" }),
+    credentialId: z.string().min(1, "Credential is required"),
     model: z.string().min(1, "Model is required"),
     systemPrompt: z.string().optional(),
     userPrompt: z.string().min(1, "User prompt is required"),
@@ -60,6 +64,8 @@ export const GeminiDialog = ({
     defaultValues = {},
 }: Props) => {
 
+    const { data: credentials, isLoading: isLoadingCredentials } = useCredentialByType(CredentialType.GEMINI);
+
     const [models, setModels] = useState<string[]>([]);
     const [isLoadingModels, setIsLoadingModels] = useState(false);
 
@@ -67,6 +73,7 @@ export const GeminiDialog = ({
         resolver: zodResolver(formSchema),
         defaultValues: {
             variableName: defaultValues.variableName || '',
+            credentialId: defaultValues.credentialId || '',
             model: defaultValues.model || "gemini-2.0-flash",
             systemPrompt: defaultValues.systemPrompt || '',
             userPrompt: defaultValues.userPrompt || '',
@@ -97,6 +104,7 @@ export const GeminiDialog = ({
         if (open) {
             form.reset({
                 variableName: defaultValues.variableName || '',
+                credentialId: defaultValues.credentialId || '',
                 model: defaultValues.model || "gemini-2.0-flash",
                 systemPrompt: defaultValues.systemPrompt || '',
                 userPrompt: defaultValues.userPrompt || '',
@@ -140,6 +148,34 @@ export const GeminiDialog = ({
                                     <FormDescription>
                                         Name of the variable to store the response in. It can be used later to reference in other nodes:{" "} {`{{${watchVariableName}.geminiResponse}}`}
                                     </FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="credentialId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Gemini Credential</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingCredentials || !credentials?.length}>
+                                        <FormControl>
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Select a credential" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {credentials?.map((credential) => (
+                                                <SelectItem key={credential.id} value={credential.id}>
+                                                    <div className="flex items-center gap-2">
+                                                        <Image src="/logos/gemini.svg" alt="Gemini" width={16} height={16} />
+                                                        <span>{credential.name}</span>
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                     <FormMessage />
                                 </FormItem>
                             )}
