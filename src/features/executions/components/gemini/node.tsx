@@ -10,6 +10,7 @@ import { geminiChannelName } from "@/inngest/channels/gemini";
 
 type GeminiNodeData = {
     variableName?: string;
+    credentialId?: string;
     model?: any;
     systemPrompt?: string;
     userPrompt?: string;
