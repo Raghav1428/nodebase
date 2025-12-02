@@ -127,10 +127,10 @@ export const SlackDialog = ({
                                         Get this from Slack: Go to your workspace → More → Tools → Workflows → New → Build workflow → Choose <strong>From a webhook</strong> → set up variables → Set <strong>content</strong> as key → Done → Continue
                                     </FormDescription>
                                     <FormDescription>
-                                        Then, Add steps → <strong>Send a message to a channel</strong> → Select a channel → <strong>Insert a variable</strong> → Choose <strong>content</strong> → Click Save → Click Finish up → CLick Publish
+                                        Then, Add steps → <strong>Send a message to a channel</strong> → Select a channel → <strong>Insert a variable</strong> → Choose <strong>content</strong> → Click Save → Click Finish up → Click Publish
                                     </FormDescription>
                                     <FormDescription>
-                                        Then, Go to Home → Go to Channel you added the workflow to →  Click <strong>Workflows</strong> → Click on the workflow → CLick on <strong>Starts with a webhook</strong> → Copy <strong>Web request URL</strong> → Paste it here
+                                        Then, Go to Home → Go to Channel you added the workflow to →  Click <strong>Workflows</strong> → Click on the workflow → Click on <strong>Starts with a webhook</strong> → Copy <strong>Web request URL</strong> → Paste it here
                                     </FormDescription>
                                     <FormMessage />
                                 </FormItem>

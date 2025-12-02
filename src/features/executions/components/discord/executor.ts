@@ -40,10 +40,6 @@ export const discordExecutor: NodeExecutor<DiscordData> = async ({ data, nodeId,
     const content = decode(rawContent);
     const username = data.username ? Handlebars.compile(data.username)(context) : "NodeBase";
 
-    console.log("[Discord Node] webhookUrl:", data.webhookUrl);
-    console.log("[Discord Node] username:", username);
-    console.log("[Discord Node] content preview:", content.slice(0, 100));
-
     try {
         
         const result = await step.run("discord-webhook", async () => {

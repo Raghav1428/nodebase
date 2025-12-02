@@ -9,6 +9,7 @@ import { useNodeStatus } from "../../hooks/use-node-status";
 import { slackChannelName } from "@/inngest/channels/slack";
 
 type SlackNodeData = {
+    variableName?: string;
     webhookUrl?: string;
     content?: string;
 };
@@ -45,7 +46,7 @@ export const SlackNode = memo((props: NodeProps<SlackNodeType>) => {
     }
     
     const nodeData = props.data;
-    const description = nodeData?.content ? `Send ${nodeData.content.slice(0, 50)}...` : "Not configured";
+    const description = nodeData?.content ? `Send ${nodeData.content.slice(0, 50)}${nodeData.content.length > 50 ? '...' : ''}` : "Not configured";
     
     return (
         <>

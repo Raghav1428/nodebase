@@ -9,6 +9,7 @@ import { useNodeStatus } from "../../hooks/use-node-status";
 import { discordChannelName } from "@/inngest/channels/discord";
 
 type DiscordNodeData = {
+    variableName?: string;
     webhookUrl?: string;
     content?: string;
     username?: string;
@@ -46,7 +47,7 @@ export const DiscordNode = memo((props: NodeProps<DiscordNodeType>) => {
     }
     
     const nodeData = props.data;
-    const description = nodeData?.content ? `Send ${nodeData.content.slice(0, 50)}...` : "Not configured";
+    const description = nodeData?.content ? `Send ${nodeData.content.slice(0, 50)}${nodeData.content.length > 50 ? '...' : ''}` : "Not configured";
     
     return (
         <>
