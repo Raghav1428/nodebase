@@ -17,6 +17,11 @@ import {
     FormLabel,
     FormMessage
 } from "@/components/ui/form";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Textarea } from "@/components/ui/textarea";
 import z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -81,7 +86,7 @@ export const DiscordDialog = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange} >
-            <DialogContent className="max-h-[100vh] overflow-y-auto">
+            <DialogContent className="max-h-[87vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>
                         Discord Configuration
@@ -120,16 +125,17 @@ export const DiscordDialog = ({
                                     <FormLabel>Webhook URL</FormLabel>
                                     <FormControl>
                                         <Input 
-                                            placeholder="https://discord.com/api/webhooks/1234567890/1234567890" 
+                                            placeholder="https://discord.com/api/webhooks/1234567890/abcd-EFGH"
                                             {...field} 
                                         />
                                     </FormControl>
                                     <FormDescription>
-                                        <details className="space-y-2">
-                                            <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
+                                        <Collapsible>
+                                            <CollapsibleTrigger className="cursor-pointer text-xs font-medium text-muted-foreground">
                                                 How to get your Discord Webhook URL (click to expand)
-                                            </summary>
-                                            <div className="mt-2 space-y-2 text-xs sm:text-sm">
+                                            </CollapsibleTrigger>
+
+                                            <CollapsibleContent className="mt-2 space-y-2 text-xs sm:text-sm">
                                                 <p><strong>Step 1: Open channel settings</strong></p>
                                                 <ul className="list-disc ml-6 space-y-1">
                                                     <li>Right-click the channel you want to post to</li>
@@ -149,8 +155,8 @@ export const DiscordDialog = ({
                                                 <ul className="list-disc ml-6 space-y-1">
                                                     <li>Paste the copied <strong>Webhook URL</strong> into the field above</li>
                                                 </ul>
-                                            </div>
-                                        </details>
+                                            </CollapsibleContent>
+                                        </Collapsible>
                                     </FormDescription>
                                     <FormMessage />
                                 </FormItem>

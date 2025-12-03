@@ -17,6 +17,11 @@ import {
     FormLabel,
     FormMessage
 } from "@/components/ui/form";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Textarea } from "@/components/ui/textarea";
 import z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -80,7 +85,7 @@ export const SlackDialog = ({
     return (
         <Dialog open={open} onOpenChange={onOpenChange} >
             {/* make dialog scrollable if content gets tall */}
-            <DialogContent className="max-h-[80vh] overflow-y-auto">
+            <DialogContent className="max-h-[71vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>
                         Slack Configuration
@@ -119,16 +124,17 @@ export const SlackDialog = ({
                                     <FormLabel>Webhook URL</FormLabel>
                                     <FormControl>
                                         <Input 
-                                            placeholder="https://slack.com/api/chat.postMessage" 
+                                            placeholder="https://hooks.slack.com/triggers/ABCD123XYZ/0123456789" 
                                             {...field} 
                                         />
                                     </FormControl>
                                     <FormDescription>
-                                        <details className="space-y-2">
-                                            <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
+                                        <Collapsible>
+                                            <CollapsibleTrigger className="cursor-pointer text-xs font-medium text-muted-foreground">
                                                 How to get your Slack Webhook URL (click to expand)
-                                            </summary>
-                                            <div className="mt-2 space-y-2 text-xs sm:text-sm">
+                                            </CollapsibleTrigger>
+
+                                            <CollapsibleContent className="mt-2 space-y-2 text-xs sm:text-sm">
                                                 <p><strong>Step 1: Create a workflow</strong></p>
                                                 <ul className="list-disc ml-6 space-y-1">
                                                     <li>Go to your Slack workspace → <strong>More</strong> → <strong>Tools</strong> → <strong>Workflows</strong></li>
@@ -151,8 +157,8 @@ export const SlackDialog = ({
                                                     <li>Click <strong>Starts with a webhook</strong></li>
                                                     <li>Copy the <strong>Web request URL</strong> and paste it above</li>
                                                 </ul>
-                                            </div>
-                                        </details>
+                                            </CollapsibleContent>
+                                        </Collapsible>
                                     </FormDescription>
                                     <FormMessage />
                                 </FormItem>
