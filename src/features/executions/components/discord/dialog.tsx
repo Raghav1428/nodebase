@@ -25,7 +25,6 @@ import { useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-
 const formSchema = z.object({
     variableName: z
         .string()
@@ -80,10 +79,9 @@ export const DiscordDialog = ({
         onOpenChange(false);
     };
 
-
     return (
         <Dialog open={open} onOpenChange={onOpenChange} >
-            <DialogContent>
+            <DialogContent className="max-h-[100vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>
                         Discord Configuration
@@ -127,7 +125,32 @@ export const DiscordDialog = ({
                                         />
                                     </FormControl>
                                     <FormDescription>
-                                        Get this from Discord: Channel Settings → Integrations → Webhooks
+                                        <details className="space-y-2">
+                                            <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
+                                                How to get your Discord Webhook URL (click to expand)
+                                            </summary>
+                                            <div className="mt-2 space-y-2 text-xs sm:text-sm">
+                                                <p><strong>Step 1: Open channel settings</strong></p>
+                                                <ul className="list-disc ml-6 space-y-1">
+                                                    <li>Right-click the channel you want to post to</li>
+                                                    <li>Select <strong>Edit Channel</strong></li>
+                                                    <li>Go to the <strong>Integrations</strong> tab</li>
+                                                </ul>
+
+                                                <p><strong>Step 2: Create a webhook</strong></p>
+                                                <ul className="list-disc ml-6 space-y-1">
+                                                    <li>Click <strong>Webhooks</strong></li>
+                                                    <li>Click <strong>New Webhook</strong></li>
+                                                    <li>Click on the new bot that was just created, you can rename it as well</li>
+                                                    <li>Click <strong>Copy Webhook URL</strong></li>
+                                                </ul>
+
+                                                <p><strong>Step 3: Use it here</strong></p>
+                                                <ul className="list-disc ml-6 space-y-1">
+                                                    <li>Paste the copied <strong>Webhook URL</strong> into the field above</li>
+                                                </ul>
+                                            </div>
+                                        </details>
                                     </FormDescription>
                                     <FormMessage />
                                 </FormItem>

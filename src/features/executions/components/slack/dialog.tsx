@@ -77,10 +77,10 @@ export const SlackDialog = ({
         onOpenChange(false);
     };
 
-
     return (
         <Dialog open={open} onOpenChange={onOpenChange} >
-            <DialogContent>
+            {/* make dialog scrollable if content gets tall */}
+            <DialogContent className="max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>
                         Slack Configuration
@@ -124,13 +124,35 @@ export const SlackDialog = ({
                                         />
                                     </FormControl>
                                     <FormDescription>
-                                        Get this from Slack: Go to your workspace → More → Tools → Workflows → New → Build workflow → Choose <strong>From a webhook</strong> → set up variables → Set <strong>content</strong> as key → Done → Continue
-                                    </FormDescription>
-                                    <FormDescription>
-                                        Then, Add steps → <strong>Send a message to a channel</strong> → Select a channel → <strong>Insert a variable</strong> → Choose <strong>content</strong> → Click Save → Click Finish up → Click Publish
-                                    </FormDescription>
-                                    <FormDescription>
-                                        Then, Go to Home → Go to Channel you added the workflow to →  Click <strong>Workflows</strong> → Click on the workflow → Click on <strong>Starts with a webhook</strong> → Copy <strong>Web request URL</strong> → Paste it here
+                                        <details className="space-y-2">
+                                            <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
+                                                How to get your Slack Webhook URL (click to expand)
+                                            </summary>
+                                            <div className="mt-2 space-y-2 text-xs sm:text-sm">
+                                                <p><strong>Step 1: Create a workflow</strong></p>
+                                                <ul className="list-disc ml-6 space-y-1">
+                                                    <li>Go to your Slack workspace → <strong>More</strong> → <strong>Tools</strong> → <strong>Workflows</strong></li>
+                                                    <li>Create a new workflow → Choose <strong>From a webhook</strong></li>
+                                                    <li>Set up variables → Add <strong>content</strong> as the key → Continue</li>
+                                                </ul>
+
+                                                <p><strong>Step 2: Add steps</strong></p>
+                                                <ul className="list-disc ml-6 space-y-1">
+                                                    <li>Select <strong>Send a message to a channel</strong></li>
+                                                    <li>Choose a channel</li>
+                                                    <li>Click <strong>Insert a variable</strong> → choose <strong>content</strong></li>
+                                                    <li>Save → Finish up → Publish</li>
+                                                </ul>
+
+                                                <p><strong>Step 3: Get the Web Request URL</strong></p>
+                                                <ul className="list-disc ml-6 space-y-1">
+                                                    <li>Go to the channel where the workflow was added</li>
+                                                    <li>Click <strong>Workflows</strong> → open your workflow</li>
+                                                    <li>Click <strong>Starts with a webhook</strong></li>
+                                                    <li>Copy the <strong>Web request URL</strong> and paste it above</li>
+                                                </ul>
+                                            </div>
+                                        </details>
                                     </FormDescription>
                                     <FormMessage />
                                 </FormItem>
