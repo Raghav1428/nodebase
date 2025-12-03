@@ -6,6 +6,7 @@ import { inngest } from "@/inngest/client";
 import prisma from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { decrypt } from "@/lib/encryption";
 
 export type OpenAIToken = Realtime.Token<
   typeof openAIChannel,
@@ -48,7 +49,7 @@ export async function getAvailableOpenAIModels(credentialId: string): Promise<st
   try {
     const response = await fetch("https://api.openai.com/v1/models", {
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${decrypt(apiKey)}`,
       },
       // cache for 1 hour
       next: { revalidate: 3600 },

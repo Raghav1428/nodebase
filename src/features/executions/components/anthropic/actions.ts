@@ -6,6 +6,7 @@ import { anthropicChannel } from "@/inngest/channels/anthropic";
 import prisma from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { decrypt } from "@/lib/encryption";
 
 export type AnthropicToken = Realtime.Token<
   typeof anthropicChannel,
@@ -48,7 +49,7 @@ export async function getAvailableAnthropicModels(credentialId: string): Promise
   try {
     const response = await fetch("https://api.anthropic.com/v1/models", {
       headers: {
-        "x-api-key": apiKey,
+        "x-api-key": decrypt(apiKey),
         "anthropic-version": "2023-06-01",
       },
       next: { revalidate: 3600 },
