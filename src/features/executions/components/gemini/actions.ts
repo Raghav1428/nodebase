@@ -6,6 +6,7 @@ import { inngest } from "@/inngest/client";
 import prisma from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { decrypt } from "@/lib/encryption";
 
 export type GeminiToken = Realtime.Token<
     typeof geminiChannel,
@@ -46,7 +47,7 @@ export async function getAvailableGeminiModels(credentialId: string): Promise<st
     }
 
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${decrypt(apiKey)}`, {
             next: { revalidate: 3600 } // Cache for 1 hour
         });
 
