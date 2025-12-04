@@ -90,6 +90,6 @@ export async function POST(req: NextRequest) {
 
     } catch (error) {
         console.error("Error in webhook trigger:", error);
-        return NextResponse.json({ success: false, error: `Failed to process webhook trigger: ${error}` }, { status: 500 });
+        return NextResponse.json({ success: false, error: `Failed to process webhook trigger` }, { status: 500 });
     }
 }
