@@ -61,7 +61,7 @@ export const scheduledWorkflowRunner = inngest.createFunction(
                     const minuteEnd = minuteStart + 60000;
 
                     if (prev.getTime() >= minuteStart && prev.getTime() < minuteEnd) {
-                        await step.run(`trigger-workflow-${workflow.id}`, async () => {
+                        await step.run(`trigger-workflow-${workflow.id}-${node.id}`, async () => {
                             await sendWorkflowExecution({
                                 workflowId: workflow.id,
                                 initialData: {

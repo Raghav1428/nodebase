@@ -18,7 +18,7 @@ export const scheduledTriggerExecutor: NodeExecutor<ScheduledTriggerData> = asyn
     try {
 
         if (data?.cronExpression && typeof data.cronExpression !== "string") {
-        throw new Error("cronExpression must be a string");
+        throw new NonRetriableError("cronExpression must be a string");
         }
 
         if (data?.cronExpression) {
