@@ -85,7 +85,7 @@ export const SlackDialog = ({
     return (
         <Dialog open={open} onOpenChange={onOpenChange} >
             {/* make dialog scrollable if content gets tall */}
-            <DialogContent className="max-h-[71vh] overflow-y-auto">
+            <DialogContent className="max-h-[73vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>
                         Slack Configuration

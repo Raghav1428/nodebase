@@ -4,7 +4,8 @@ import { createId } from "@paralleldrive/cuid2"
 import { useReactFlow } from "@xyflow/react";
 import {
     GlobeIcon,
-    MousePointer2Icon
+    MousePointer2Icon,
+    TimerIcon
 } from "lucide-react"
 import { useCallback } from "react";
 import { toast } from "sonner";
@@ -44,6 +45,18 @@ const triggerNodes: NodeTypeOption[] = [
         label: "Stripe Event",
         description: "Runs the flow when a Stripe event is captured.",
         icon: "/logos/stripe.svg",
+    },
+    {
+        type: NodeType.WEBHOOK_TRIGGER,
+        label: "Webhook",
+        description: "Runs the flow when a webhook event is captured.",
+        icon: "/logos/webhook.svg",
+    },
+    {
+        type: NodeType.SCHEDULED_TRIGGER,
+        label: "Schedule",
+        description: "Runs the flow at a scheduled time.",
+        icon: TimerIcon,
     },
 ];
 

@@ -9,6 +9,8 @@ import { openaiExecutor } from "../components/openai/executor";
 import { anthropicExecutor } from "../components/anthropic/executor";
 import { discordExecutor } from "../components/discord/executor";
 import { slackExecutor } from "../components/slack/executor";
+import { webhookTriggerExecutor } from "@/features/triggers/components/webhook-trigger/executor";
+import { scheduledTriggerExecutor } from "@/features/triggers/components/scheduled-trigger/executor";
 
 export const executorRegistry: Record<NodeType, NodeExecutor> = {
     [NodeType.MANUAL_TRIGGER]: manualTriggerExecutor,
@@ -21,6 +23,8 @@ export const executorRegistry: Record<NodeType, NodeExecutor> = {
     [NodeType.OPENAI]: openaiExecutor,
     [NodeType.DISCORD]: discordExecutor,
     [NodeType.SLACK]: slackExecutor,
+    [NodeType.WEBHOOK_TRIGGER]: webhookTriggerExecutor,
+    [NodeType.SCHEDULED_TRIGGER]: scheduledTriggerExecutor,
 }
 
 export const getExecutor = (type: NodeType): NodeExecutor => {
