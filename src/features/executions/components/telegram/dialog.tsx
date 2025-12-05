@@ -222,7 +222,7 @@ export const TelegramDialog = ({
                                         />
                                 </FormControl>
                                 <FormDescription>
-                                    The message to send to Telegram. Use {"{{variables}}"} for simple values or {"{{json variable}}"} to stringify objects. Supports HTML formatting.
+                                    The message to send to Telegram. Use {"{{variables}}"} for simple values or {"{{json variable}}"} to stringify objects.
                                 </FormDescription>
                                 <FormMessage />
                             </FormItem>

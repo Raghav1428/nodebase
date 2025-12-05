@@ -70,7 +70,7 @@ export const telegramExecutor: NodeExecutor<TelegramData> = async ({ data, nodeI
                 json: {
                     chat_id: data.chatId,
                     text: content.slice(0, 4096),
-                    parse_mode: "HTML",
+                    parse_mode: "Markdown",
                 },
             }).json<{ ok: boolean; result?: { message_id: number } }>();
 
