@@ -43,6 +43,16 @@ export const telegramExecutor: NodeExecutor<TelegramData> = async ({ data, nodeI
 
         const result = await step.run("telegram-send-message", async () => {
 
+            if (!data.variableName) {
+                await publish(
+                    telegramChannel().status({
+                        nodeId,
+                        status: "error",
+                    }),
+                );
+                throw new NonRetriableError("Telegram Node: Variable name is required");
+            }
+
             if (!data.botToken) {
                 await publish(
                     telegramChannel().status({
@@ -73,16 +83,6 @@ export const telegramExecutor: NodeExecutor<TelegramData> = async ({ data, nodeI
                     parse_mode: "Markdown",
                 },
             }).json<{ ok: boolean; result?: { message_id: number } }>();
-
-            if (!data.variableName) {
-                await publish(
-                    telegramChannel().status({
-                        nodeId,
-                        status: "error",
-                    }),
-                );
-                throw new NonRetriableError("Telegram Node: Variable name is required");
-            }
 
             return {
                 ...context,
