@@ -123,6 +123,7 @@ enum NodeType {
   OPENAI
   DISCORD
   SLACK
+  TELEGRAM
 }
 
 model Node {
