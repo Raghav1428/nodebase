@@ -97,6 +97,12 @@ const executionNodes: NodeTypeOption[] =[
         description: "Send a message to Slack",
         icon: "/logos/slack.svg",
     },
+    {
+        type: NodeType.TELEGRAM,
+        label: "Telegram",
+        description: "Send a message to Telegram",
+        icon: "/logos/telegram.svg",
+    },
 ];
 
 interface NodeSelectorProps {
