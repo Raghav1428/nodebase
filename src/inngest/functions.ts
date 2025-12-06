@@ -16,6 +16,7 @@ import { slackChannel } from "./channels/slack";
 import { webhookTriggerChannel } from "./channels/webhook-trigger";
 import { scheduledTriggerChannel } from "./channels/scheduled-trigger";
 import { telegramChannel } from "./channels/telegram";
+import { openRouterChannel } from "./channels/openrouter";
 
 export const executeWorkflow = inngest.createFunction(
   { 
@@ -44,6 +45,7 @@ export const executeWorkflow = inngest.createFunction(
       geminiChannel(),
       openAIChannel(),
       anthropicChannel(),
+      openRouterChannel(),
       discordChannel(),
       slackChannel(),
       telegramChannel(),

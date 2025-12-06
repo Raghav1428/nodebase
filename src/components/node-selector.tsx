@@ -86,6 +86,12 @@ const executionNodes: NodeTypeOption[] =[
         icon: "/logos/anthropic.svg",
     },
     {
+        type: NodeType.OPENROUTER,
+        label: "OpenRouter",
+        description: "Uses OpenRouter to generate a response",
+        icon: "/logos/openrouter.svg",
+    },
+    {
         type: NodeType.DISCORD,
         label: "Discord",
         description: "Send a message to Discord",
