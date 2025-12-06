@@ -4,6 +4,7 @@ import { DiscordNode } from "@/features/executions/components/discord/node";
 import { GeminiNode } from "@/features/executions/components/gemini/node";
 import { HttpRequestNode } from "@/features/executions/components/http-request/node";
 import { OpenAINode } from "@/features/executions/components/openai/node";
+import { OpenRouterNode } from "@/features/executions/components/openrouter/node";
 import { SlackNode } from "@/features/executions/components/slack/node";
 import { TelegramNode } from "@/features/executions/components/telegram/node";
 import { GoogleFormTriggerNode } from "@/features/triggers/components/google-form-trigger/node";
@@ -25,6 +26,7 @@ export const nodeComponents = {
     [NodeType.GEMINI]: GeminiNode,
     [NodeType.OPENAI]: OpenAINode,
     [NodeType.ANTHROPIC]: AnthropicNode,
+    [NodeType.OPENROUTER]: OpenRouterNode,
     [NodeType.DISCORD]: DiscordNode,
     [NodeType.SLACK]: SlackNode,
     [NodeType.TELEGRAM]: TelegramNode,

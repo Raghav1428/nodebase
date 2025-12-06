@@ -12,6 +12,7 @@ import { slackExecutor } from "../components/slack/executor";
 import { webhookTriggerExecutor } from "@/features/triggers/components/webhook-trigger/executor";
 import { scheduledTriggerExecutor } from "@/features/triggers/components/scheduled-trigger/executor";
 import { telegramExecutor } from "../components/telegram/executor";
+import { openrouterExecutor } from "../components/openrouter/executor";
 
 export const executorRegistry: Record<NodeType, NodeExecutor> = {
     [NodeType.MANUAL_TRIGGER]: manualTriggerExecutor,
@@ -23,6 +24,7 @@ export const executorRegistry: Record<NodeType, NodeExecutor> = {
     [NodeType.ANTHROPIC]: anthropicExecutor,
     [NodeType.OPENAI]: openaiExecutor,
     [NodeType.DISCORD]: discordExecutor,
+    [NodeType.OPENROUTER]: openrouterExecutor,
     [NodeType.SLACK]: slackExecutor,
     [NodeType.WEBHOOK_TRIGGER]: webhookTriggerExecutor,
     [NodeType.SCHEDULED_TRIGGER]: scheduledTriggerExecutor,

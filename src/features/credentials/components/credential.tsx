@@ -48,6 +48,11 @@ const credentialTypeOptions = [
         value: CredentialType.OPENAI,
         label: "OpenAI",
         logo: "/logos/openai.svg"
+    },
+    {
+        value: CredentialType.OPENROUTER,
+        label: "OpenRouter",
+        logo: "/logos/openrouter.svg"
     }
 ]
 
