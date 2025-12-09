@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Lock, Search, Settings, Sparkles } from "lucide-react";
+import { Box, Lock, Search, Settings, Sparkles, Workflow } from "lucide-react";
 import { GlowingEffect } from "@/components/ui/glowing-effect";
 import { Container } from "@/components/ui/container";
 import React from "react";
@@ -49,7 +49,7 @@ export function Features() {
                 />
                 
                 <GridItem
-                    icon={<Box className="h-4 w-4 text-white" />}
+                    icon={<Workflow className="h-4 w-4 text-white" />}
                     title="Seamless Integrations"
                     description="Connect with your favorite tools and services with over 20+ pre-built integrations."
                 />
