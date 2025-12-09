@@ -24,6 +24,9 @@ export const ProductDemo = () => {
                   loop 
                   muted 
                   playsInline
+                  preload="metadata"
+                  poster="logos/logo.svg"
+                  aria-label="Product Demonstration Video"
                   className="w-full h-full object-cover"
                 >
                   <source src="/3385370-uhd_4096_2160_24fps.mp4" type="video/mp4" />

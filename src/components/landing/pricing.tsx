@@ -128,6 +128,7 @@ export const Pricing = () => {
               </ul>
 
               <Button 
+                type="button"
                 variant={tier.highlight ? "default" : "outline"}
                 className={cn(
                     "w-full", 

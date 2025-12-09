@@ -1,4 +1,10 @@
 import { LegalLayout } from "@/components/legal-layout";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: "Cookie Policy",
+    description: "Learn about how Nodebase uses cookies and your choices regarding cookie usage.",
+}
 
 export default function CookiePolicy() {
   return (

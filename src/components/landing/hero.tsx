@@ -7,7 +7,7 @@ import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 
 export const Hero = () => {
-  const { data: session } = authClient.useSession();
+  const { data: session, isPending } = authClient.useSession();
   const router = useRouter();
   return (
     <div id="home" className="min-h-[30rem] w-full relative flex flex-col items-center justify-center antialiased overflow-hidden pb-10">
@@ -30,7 +30,7 @@ export const Hero = () => {
             Build, test, and deploy powerful automation workflows visually. No coding required. Just drag, drop, and automate.
           </p>
           <div className="mt-10 flex justify-center gap-4">
-             <ShinyButton onClick={() => router.push(session ? "/workflows" : "/signup")} className="bg-black/50 backdrop-blur-md border border-white/10 hover:bg-black/70">
+             <ShinyButton onClick={() => router.push(session ? "/workflows" : "/signup")} disabled={isPending} className="bg-black/50 backdrop-blur-md border border-white/10 hover:bg-black/70">
                Get Started
              </ShinyButton>
           </div>

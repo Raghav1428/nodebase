@@ -1,5 +1,10 @@
 import { LegalLayout } from "@/components/legal-layout";
+import { Metadata } from "next";
 
+export const metadata: Metadata = {
+    title: "Terms of Service",
+    description: "Learn about the terms and conditions for using Nodebase.",
+}
 
 export default function TermsOfService() {
   return (

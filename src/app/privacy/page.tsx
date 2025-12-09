@@ -1,4 +1,10 @@
 import { LegalLayout } from "@/components/legal-layout";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: "Privacy Policy",
+    description: "Learn about how Nodebase uses your personal information.",
+}
 
 export default function PrivacyPolicy() {
   return (

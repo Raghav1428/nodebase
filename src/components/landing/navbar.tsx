@@ -13,6 +13,7 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import { authClient } from "@/lib/auth-client";
+import Image from "next/image";
 
 export const Navbar = () => {
   const { data: session } = authClient.useSession();
@@ -20,7 +21,7 @@ export const Navbar = () => {
     <div className="fixed top-0 inset-x-0 z-50 transition-all duration-300 bg-black/20 backdrop-blur-md border-b border-white/5">
       <Container className="h-20 flex items-center justify-between">
         <Link href="/" className="font-bold text-xl tracking-tighter flex items-center gap-2">
-          <img src="/logos/logo.svg" alt="nodebase.ai" className="h-8 w-auto" />
+          <Image src="/logos/logo.svg" alt="nodebase.ai" width={72} height={72} />
         </Link>
 
         <div className="hidden md:block">

@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { Container } from "../ui/container";
 import { Github, Linkedin } from "lucide-react";
+import Image from "next/image";
 
 export const Footer = () => {
     return (
@@ -15,12 +16,11 @@ export const Footer = () => {
                         {/* Brand / about */}
                         <div className="sm:col-span-2 lg:col-span-2 flex flex-col">
                             <Link href="/" className="flex items-center gap-3 mb-4">
-                                <img
+                                <Image
                                     src="/logos/logo.svg"
                                     alt="nodebase.ai"
-                                    className="h-8 w-auto"
-                                    width={128}
-                                    height={32}
+                                    width={56}
+                                    height={56}
                                 />
                                 <span className="font-bold text-xl tracking-tighter text-white">Nodebase</span>
                             </Link>

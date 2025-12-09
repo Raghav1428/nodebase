@@ -6,6 +6,7 @@ import { Container } from "@/components/ui/container";
 import React from "react";
 import Link from "next/link";
 import { ArrowLeft, Printer } from "lucide-react";
+import { Button } from "./ui/button";
 
 export function LegalLayout({ 
   children, 
@@ -35,10 +36,10 @@ export function LegalLayout({
                 </div>
 
                 <div>
-                    <button onClick={() => window.print()} className="inline-flex items-center gap-2 text-sm text-neutral-400 hover:text-white transition-colors">
+                    <Button type="button" onClick={() => window.print()} className="inline-flex items-center gap-2 text-sm text-neutral-400 hover:text-white transition-colors">
                         <Printer className="w-4 h-4" />
                         Print this page
-                    </button>
+                    </Button>
                 </div>
               </div>
             </aside>
