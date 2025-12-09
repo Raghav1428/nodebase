@@ -17,7 +17,7 @@ export const requireNoAuth = async () => {
         headers: await headers(),
     });
     if (session) {
-        redirect("/")
+        redirect("/workflows") 
     }
     return session;
 }
