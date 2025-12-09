@@ -41,7 +41,7 @@ export function RegisterForm() {
         provider: "github"
     }, {
         onSuccess: () => {
-            router.push("/");
+            router.push("/workflows");
         },
         onError: (error) => {
             toast.error(error.error.message || "Something went wrong");
@@ -54,7 +54,7 @@ export function RegisterForm() {
         provider: "google"
     }, {
         onSuccess: () => {
-            router.push("/");
+            router.push("/workflows");
         },
         onError: (error) => {
             toast.error(error.error.message || "Something went wrong");
@@ -72,7 +72,7 @@ export function RegisterForm() {
             },
             {
                 onSuccess: () => {
-                    router.push("/");
+                    router.push("/workflows");
                 },
                 onError: (error) => {
                     toast.error(error.error.message || "Something went wrong");
