@@ -1,7 +1,6 @@
 "use client";
-import React from "react";
+
 import DarkVeil from "./dark-veil";
-import { Container } from "../ui/container";
 import { ShinyButton } from "../ui/shiny-button";
 import { motion } from "framer-motion";
 import { authClient } from "@/lib/auth-client";

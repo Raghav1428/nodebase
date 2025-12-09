@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { Container } from "../ui/container";
-import { Github, Twitter, Disc, Linkedin } from "lucide-react";
+import { Github, Linkedin } from "lucide-react";
 
 export const Footer = () => {
     return (
