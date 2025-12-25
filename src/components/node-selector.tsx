@@ -109,6 +109,54 @@ const executionNodes: NodeTypeOption[] =[
         description: "Send a message to Telegram",
         icon: "/logos/telegram.svg",
     },
+    {
+        type: NodeType.POSTGRES,
+        label: "PostgreSQL",
+        description: "Execute PostgreSQL database queries",
+        icon: "/logos/postgres.svg",
+    },
+    {
+        type: NodeType.MONGODB,
+        label: "MongoDB",
+        description: "Execute MongoDB database operations",
+        icon: "/logos/mongodb.svg",
+    },
+    {
+        type: NodeType.MCP_TOOLS,
+        label: "MCP Tools",
+        description: "Connect to MCP server and use tools",
+        icon: "/logos/mcp.svg",
+    },
+    {
+        type: NodeType.AI_AGENT,
+        label: "AI Agent",
+        description: "Autonomous AI agent with tool calling",
+        icon: "/logos/ai-agent.svg",
+    },
+    {
+        type: NodeType.OPENAI_CHAT_MODEL,
+        label: "OpenAI Chat Model",
+        description: "Uses OpenAI chat model to generate a response in an AI agent",
+        icon: "/logos/openai.svg",
+    },
+    {
+        type: NodeType.ANTHROPIC_CHAT_MODEL,
+        label: "Anthropic Chat Model",
+        description: "Uses Anthropic chat model to generate a response in an AI agent",
+        icon: "/logos/anthropic.svg",
+    },
+    {
+        type: NodeType.GEMINI_CHAT_MODEL,
+        label: "Gemini Chat Model",
+        description: "Uses Gemini chat model to generate a response in an AI agent",
+        icon: "/logos/gemini.svg",
+    },
+    {
+        type: NodeType.OPENROUTER_CHAT_MODEL,
+        label: "OpenRouter Chat Model",
+        description: "Uses OpenRouter chat model to generate a response in an AI agent",
+        icon: "/logos/openrouter.svg",
+    },
 ];
 
 interface NodeSelectorProps {

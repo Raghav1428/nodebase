@@ -10,7 +10,7 @@ import { sendWorkflowExecution } from "@/inngest/utils";
 export const workflowsRouter = createTRPCRouter({
     execute: protectedProcedure
         .input(z.object({ id: z.string() }))
-        .mutation( async({ ctx, input }) => {
+        .mutation(async ({ ctx, input }) => {
             const workflow = await prisma.workflow.findUniqueOrThrow({
                 where: {
                     id: input.id,
@@ -33,7 +33,7 @@ export const workflowsRouter = createTRPCRouter({
                 nodes: {
                     create:{
                         type: NodeType.INITIAL,
-                        position: { x: 0, y: 0},
+                        position: { x: 0, y: 0 },
                         name: NodeType.INITIAL,
                     },
                 },
@@ -43,7 +43,7 @@ export const workflowsRouter = createTRPCRouter({
 
     remove: protectedProcedure
         .input(z.object({ id: z.string() }))
-        .mutation(( { ctx, input }) => {
+        .mutation(({ ctx, input }) => {
             return prisma.workflow.delete({
                 where: {
                     id: input.id,
@@ -69,15 +69,15 @@ export const workflowsRouter = createTRPCRouter({
     ),
 
     update: protectedProcedure
-        .input(z.object({ 
-            id: z.string(), 
+        .input(z.object({
+            id: z.string(),
             nodes: z.array(
                 z.object({
                     id: z.string(),
                     type: z.string().nullish(),
                     position: z.object({ x: z.number(), y: z.number() }),
                     data: z.record(z.string(), z.any()).optional(),
-            })
+                })
             ),
             edges: z.array(
                 z.object({
@@ -113,8 +113,17 @@ export const workflowsRouter = createTRPCRouter({
                     }))
                 });
 
+                // Create a set of node IDs for efficient lookup
+                const nodeIds = new Set(nodes.map(n => n.id));
+
+                // Filter edges to only include those where both source and target exist
+                // This prevents FK constraint violations when edges reference missing nodes
+                const validEdges = edges.filter(edge =>
+                    nodeIds.has(edge.source) && nodeIds.has(edge.target)
+                );
+
                 await tx.connection.createMany({
-                    data: edges.map((edge) =>({
+                    data: validEdges.map((edge) => ({
                         workflowId: id,
                         fromNodeId: edge.source,
                         toNodeId: edge.target,
@@ -135,7 +144,7 @@ export const workflowsRouter = createTRPCRouter({
 
     getOne: protectedProcedure
         .input(z.object({ id: z.string() }))
-        .query( async ({ ctx, input }) => {
+        .query(async ({ ctx, input }) => {
             const workflow = await prisma.workflow.findUniqueOrThrow({
                 where: {
                     id: input.id,
@@ -170,21 +179,21 @@ export const workflowsRouter = createTRPCRouter({
     ),
 
     getMany: protectedProcedure
-    .input(
-        z.object({
-            page: z.number().default(PAGINATION.DEFAULT_PAGE),
-            pageSize: z.number().min(PAGINATION.MIN_PAGE_SIZE).max(PAGINATION.MAX_PAGE_SIZE).default(PAGINATION.DEFAULT_PAGE_SIZE),
-            search: z.string().default(""),
-        })
-    )
-        .query(async({ ctx, input }) => {
+        .input(
+            z.object({
+                page: z.number().default(PAGINATION.DEFAULT_PAGE),
+                pageSize: z.number().min(PAGINATION.MIN_PAGE_SIZE).max(PAGINATION.MAX_PAGE_SIZE).default(PAGINATION.DEFAULT_PAGE_SIZE),
+                search: z.string().default(""),
+            })
+        )
+        .query(async ({ ctx, input }) => {
             const { page, pageSize, search } = input;
 
             const [items, totalCount] = await Promise.all([
                 prisma.workflow.findMany({
-                    skip: (page-1) * pageSize,
+                    skip: (page - 1) * pageSize,
                     take: pageSize,
-                    where: { 
+                    where: {
                         userId: ctx.auth.user.id,
                         name: {
                             contains: search,
@@ -196,7 +205,7 @@ export const workflowsRouter = createTRPCRouter({
                     },
                 }),
                 prisma.workflow.count({
-                    where: { 
+                    where: {
                         userId: ctx.auth.user.id,
                         name: {
                             contains: search,
@@ -206,7 +215,7 @@ export const workflowsRouter = createTRPCRouter({
                 }),
             ])
 
-            const totalPages = Math.ceil(totalCount/pageSize);
+            const totalPages = Math.ceil(totalCount / pageSize);
             const hasNextPage = page < totalPages;
             const hasPreviousPage = page > 1
 
@@ -220,6 +229,5 @@ export const workflowsRouter = createTRPCRouter({
                 hasPreviousPage
             };
         },
-    )
-
+    ),
 });
