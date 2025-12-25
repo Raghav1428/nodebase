@@ -68,7 +68,7 @@ export const OpenRouterChatModelDialog = ({
         resolver: zodResolver(formSchema),
         defaultValues: {
             credentialId: defaultValues.credentialId || '',
-            model: defaultValues.model || "claude-sonnet-4-20250514",
+            model: defaultValues.model || "openai/gpt-4o-mini",
             systemPrompt: defaultValues.systemPrompt || '',
             userPrompt: defaultValues.userPrompt || '',
         },

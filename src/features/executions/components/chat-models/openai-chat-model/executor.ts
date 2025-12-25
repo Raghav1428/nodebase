@@ -20,8 +20,11 @@ type OpenAIChatModelNodeData = {
     userPrompt?: string;
 }
 
-// TOON format: Token-Optimized Object Notation
-type ChatMessage = string;
+// Chat message with role for proper conversation history
+type ChatMessageWithRole = {
+    role: 'user' | 'assistant';
+    content: string;
+}
 
 export const openAIChatModelExecutor: NodeExecutor<OpenAIChatModelNodeData> = async ({ data, nodeId, userId, context, step, publish }) => {
     await publish(
@@ -60,12 +63,15 @@ export const openAIChatModelExecutor: NodeExecutor<OpenAIChatModelNodeData> = as
     });
 
     try {
-        const chatHistory = (context._chatHistory as ChatMessage[]) || [];
+        // Get chat history with roles
+        const chatHistory = (context._chatHistory as ChatMessageWithRole[]) || [];
+
+        // Build messages with proper roles from history
         const messages: CoreMessage[] = [
             { role: 'system', content: systemPrompt },
             ...chatHistory.map(msg => ({
-                role: 'assistant' as const,
-                content: msg,
+                role: msg.role as 'user' | 'assistant',
+                content: msg.content,
             })),
             { role: 'user', content: userPrompt },
         ];

@@ -26,7 +26,7 @@ type PostgresNodeType = Node<PostgresNodeData>
 export const PostgresNode = memo((props: NodeProps<PostgresNodeType>) => {
     
     const [dialogOpen, setDialogOpen] = useState(false);
-    const { setNodes } = useReactFlow();
+    const { setNodes, setEdges } = useReactFlow();
 
     const nodeStatus = useNodeStatus({
         nodeId: props.id,
@@ -54,6 +54,7 @@ export const PostgresNode = memo((props: NodeProps<PostgresNodeType>) => {
     
     const handleDelete = () => {
         setNodes((nodes) => nodes.filter((node) => node.id !== props.id));
+        setEdges((edges) => edges.filter((edge) => edge.source !== props.id && edge.target !== props.id));
     }
     
     const nodeData = props.data;

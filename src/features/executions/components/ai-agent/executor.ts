@@ -4,6 +4,7 @@ import { aiAgentChannel } from "@/inngest/channels/ai-agent";
 import prisma from "@/lib/db";
 import { AIProvider, DATABASE, NodeType } from "@/generated/prisma";
 import { getExecutor } from "../../lib/executor-registry";
+import Handlebars from "handlebars";
 
 type AiAgentData = {
     variableName?: string;
@@ -21,18 +22,21 @@ const DATABASE_NODE_TYPES = [
     NodeType.MONGODB,
 ];
 
-// TOON format: Token-Optimized Object Notation
-type ChatMessage = string;
+// Chat message with role for proper conversation history
+type ChatMessageWithRole = {
+    role: 'user' | 'assistant';
+    content: string;
+}
 
 /**
  * AI Agent Executor - Orchestrates execution of connected child nodes
  * 
  * Flow:
  * 1. Find connected model and database nodes
- * 2. If database connected: Call PostgreSQL executor to get chat history
- * 3. Pass chat history to chat model executor
+ * 2. If database connected: Query chat history
+ * 3. If database connected: Save user prompt with role 'user'
  * 4. Call chat model executor to generate response
- * 5. If database connected: Call PostgreSQL executor to save response
+ * 5. If database connected: Save AI response with role 'assistant'
  * 6. Return combined result
  */
 export const aiAgentExecutor: NodeExecutor<AiAgentData> = async ({ data, nodeId, userId, context, step, publish }) => {
@@ -120,13 +124,19 @@ export const aiAgentExecutor: NodeExecutor<AiAgentData> = async ({ data, nodeId,
             );
         }
 
-        let chatHistory: ChatMessage[] = [];
+        let chatHistory: ChatMessageWithRole[] = [];
         let updatedContext: WorkflowContext = {
             ...context,
             _workflowId: workflowId,
             _agentNodeId: nodeId,
         };
 
+        // Get the user prompt from the chat model node for saving
+        const modelData = modelNode.data as Record<string, unknown>;
+        const userPromptTemplate = modelData.userPrompt as string || '';
+        const userPrompt = userPromptTemplate ? Handlebars.compile(userPromptTemplate)(context) : '';
+
+        // Step 1: Query existing chat history
         if (databaseNode) {
             if (databaseNode.type === NodeType.POSTGRES) {
                 const postgresExecutor = getExecutor(NodeType.POSTGRES);
@@ -143,7 +153,7 @@ export const aiAgentExecutor: NodeExecutor<AiAgentData> = async ({ data, nodeId,
                     publish,
                 });
 
-                const postgresResult = updatedContext._postgresResult as { chatHistory: ChatMessage[] } | undefined;
+                const postgresResult = updatedContext._postgresResult as { chatHistory: ChatMessageWithRole[] } | undefined;
                 if (postgresResult?.chatHistory) {
                     chatHistory = postgresResult.chatHistory;
                 }
@@ -162,13 +172,51 @@ export const aiAgentExecutor: NodeExecutor<AiAgentData> = async ({ data, nodeId,
                     publish,
                 });
 
-                const mongodbResult = updatedContext._mongodbResult as { chatHistory: ChatMessage[] } | undefined;
+                const mongodbResult = updatedContext._mongodbResult as { chatHistory: ChatMessageWithRole[] } | undefined;
                 if (mongodbResult?.chatHistory) {
                     chatHistory = mongodbResult.chatHistory;
                 }
             }
         }
 
+        // Step 2: Save user prompt to database (before AI response)
+        if (databaseNode && userPrompt) {
+            if (databaseNode.type === NodeType.POSTGRES) {
+                const postgresExecutor = getExecutor(NodeType.POSTGRES);
+
+                updatedContext = await postgresExecutor({
+                    data: databaseNode.data as Record<string, unknown>,
+                    nodeId: databaseNode.id,
+                    userId,
+                    context: {
+                        ...updatedContext,
+                        _postgresOperation: 'save',
+                        _messageToSave: userPrompt,
+                        _messageRole: 'user',
+                    },
+                    step,
+                    publish,
+                });
+            } else if (databaseNode.type === NodeType.MONGODB) {
+                const mongodbExecutor = getExecutor(NodeType.MONGODB);
+
+                updatedContext = await mongodbExecutor({
+                    data: databaseNode.data as Record<string, unknown>,
+                    nodeId: databaseNode.id,
+                    userId,
+                    context: {
+                        ...updatedContext,
+                        _mongodbOperation: 'save',
+                        _messageToSave: userPrompt,
+                        _messageRole: 'user',
+                    },
+                    step,
+                    publish,
+                });
+            }
+        }
+
+        // Step 3: Call chat model executor
         const chatModelExecutor = getExecutor(modelNode.type as NodeType);
 
         updatedContext = await chatModelExecutor({
@@ -185,9 +233,10 @@ export const aiAgentExecutor: NodeExecutor<AiAgentData> = async ({ data, nodeId,
 
         const response = updatedContext._chatModelResponse as string || '';
 
-        const postgresQueryResult = updatedContext._postgresResult as { chatHistory: string[]; saved: boolean; tableName: string } | undefined;
-        const mongodbQueryResult = updatedContext._mongodbResult as { chatHistory: string[]; saved: boolean; collectionName: string } | undefined;
+        const postgresQueryResult = updatedContext._postgresResult as { chatHistory: ChatMessageWithRole[]; saved: boolean; tableName: string } | undefined;
+        const mongodbQueryResult = updatedContext._mongodbResult as { chatHistory: ChatMessageWithRole[]; saved: boolean; collectionName: string } | undefined;
 
+        // Step 4: Save AI response to database
         if (databaseNode && response) {
             if (databaseNode.type === NodeType.POSTGRES) {
                 const postgresExecutor = getExecutor(NodeType.POSTGRES);
@@ -200,6 +249,7 @@ export const aiAgentExecutor: NodeExecutor<AiAgentData> = async ({ data, nodeId,
                         ...updatedContext,
                         _postgresOperation: 'save',
                         _messageToSave: response,
+                        _messageRole: 'assistant',
                     },
                     step,
                     publish,
@@ -215,6 +265,7 @@ export const aiAgentExecutor: NodeExecutor<AiAgentData> = async ({ data, nodeId,
                         ...updatedContext,
                         _mongodbOperation: 'save',
                         _messageToSave: response,
+                        _messageRole: 'assistant',
                     },
                     step,
                     publish,
@@ -223,8 +274,8 @@ export const aiAgentExecutor: NodeExecutor<AiAgentData> = async ({ data, nodeId,
         }
 
         // Capture database results from save operation
-        const postgresSaveResult = updatedContext._postgresResult as { chatHistory: string[]; saved: boolean; tableName: string } | undefined;
-        const mongodbSaveResult = updatedContext._mongodbResult as { chatHistory: string[]; saved: boolean; collectionName: string } | undefined;
+        const postgresSaveResult = updatedContext._postgresResult as { chatHistory: ChatMessageWithRole[]; saved: boolean; tableName: string } | undefined;
+        const mongodbSaveResult = updatedContext._mongodbResult as { chatHistory: ChatMessageWithRole[]; saved: boolean; collectionName: string } | undefined;
 
         await publish(
             aiAgentChannel().status({
@@ -268,6 +319,7 @@ export const aiAgentExecutor: NodeExecutor<AiAgentData> = async ({ data, nodeId,
             _postgresOperation: undefined,
             _mongodbOperation: undefined,
             _messageToSave: undefined,
+            _messageRole: undefined,
             _postgresResult: undefined,
             _mongodbResult: undefined,
         };

@@ -20,8 +20,11 @@ type AnthropicChatModelNodeData = {
     userPrompt?: string;
 }
 
-// TOON format: Token-Optimized Object Notation
-type ChatMessage = string;
+// Chat message with role for proper conversation history
+type ChatMessageWithRole = {
+    role: 'user' | 'assistant';
+    content: string;
+}
 
 export const anthropicChatModelExecutor: NodeExecutor<AnthropicChatModelNodeData> = async ({ data, nodeId, userId, context, step, publish }) => {
     await publish(
@@ -60,12 +63,15 @@ export const anthropicChatModelExecutor: NodeExecutor<AnthropicChatModelNodeData
     });
 
     try {
-        const chatHistory = (context._chatHistory as ChatMessage[]) || [];
+        // Get chat history with roles
+        const chatHistory = (context._chatHistory as ChatMessageWithRole[]) || [];
+
+        // Build messages with proper roles from history
         const messages: CoreMessage[] = [
             { role: 'system', content: systemPrompt },
             ...chatHistory.map(msg => ({
-                role: 'assistant' as const,
-                content: msg,
+                role: msg.role as 'user' | 'assistant',
+                content: msg.content,
             })),
             { role: 'user', content: userPrompt },
         ];
@@ -74,7 +80,7 @@ export const anthropicChatModelExecutor: NodeExecutor<AnthropicChatModelNodeData
             `anthropic-chat-model-generate-text-${nodeId}`,
             generateText,
             {
-                model: anthropic(data.model || "claude-3-5-sonnet-20241022"),
+                model: anthropic(data.model || "claude-sonnet-4-20250514"),
                 messages,
                 experimental_telemetry: {
                     isEnabled: true,

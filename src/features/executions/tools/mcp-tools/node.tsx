@@ -27,7 +27,7 @@ type McpToolsNodeType = Node<McpToolsNodeData>
 export const McpToolsNode = memo((props: NodeProps<McpToolsNodeType>) => {
     
     const [dialogOpen, setDialogOpen] = useState(false);
-    const { setNodes } = useReactFlow();
+    const { setNodes, setEdges } = useReactFlow();
 
     const nodeStatus = useNodeStatus({
         nodeId: props.id,
@@ -55,6 +55,7 @@ export const McpToolsNode = memo((props: NodeProps<McpToolsNodeType>) => {
     
     const handleDelete = () => {
         setNodes((nodes) => nodes.filter((node) => node.id !== props.id));
+        setEdges((edges) => edges.filter((edge) => edge.source !== props.id && edge.target !== props.id));
     }
     
     const nodeData = props.data;

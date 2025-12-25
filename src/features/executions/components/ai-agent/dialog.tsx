@@ -89,15 +89,15 @@ export const AiAgentDialog = ({
                     <AlertTitle>Connection Points</AlertTitle>
                     <AlertDescription className="mt-2 space-y-2">
                         <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full" />
+                            <div className="w-3 h-3 rounded-full bg-blue-500" />
                             <span className="text-sm"><strong>Chat Model</strong> — Connect to any AI chat model</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full" />
+                            <div className="w-3 h-3 rounded-full bg-green-500" />
                             <span className="text-sm"><strong>Database</strong> — Connect to any database</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full" />
+                            <div className="w-3 h-3 rounded-full bg-purple-500" />
                             <span className="text-sm"><strong>Tools</strong> — Connect to any external tools</span>
                         </div>
                     </AlertDescription>

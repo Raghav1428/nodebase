@@ -12,12 +12,16 @@ type MongoDBNodeData = {
     contextWindow?: string;
 }
 
-// TOON format: Token-Optimized Object Notation
-type ChatMessage = string;
+// Chat message with role for proper conversation history
+type ChatMessageWithRole = {
+    role: 'user' | 'assistant';
+    content: string;
+}
 
 interface ChatHistoryDocument extends Document {
     workflowId: string;
     nodeId: string;
+    role: 'user' | 'assistant';
     content: string;
     createdAt: Date;
 }
@@ -38,35 +42,40 @@ async function ensureChatHistoryCollection(db: Db, collectionName: string): Prom
 }
 
 /**
- * Retrieves chat history from the database
+ * Retrieves chat history from the database with roles
  */
 async function getChatHistory(
     collection: Collection<ChatHistoryDocument>,
     workflowId: string,
     agentNodeId: string,
     limit: number
-): Promise<ChatMessage[]> {
+): Promise<ChatMessageWithRole[]> {
     const results = await collection
         .find({ workflowId, nodeId: agentNodeId })
         .sort({ createdAt: -1 })
         .limit(limit)
         .toArray();
 
-    return results.reverse().map(doc => doc.content);
+    return results.reverse().map(doc => ({
+        role: doc.role,
+        content: doc.content,
+    }));
 }
 
 /**
- * Saves a chat message to the database
+ * Saves a chat message to the database with role
  */
 async function saveChatMessage(
     collection: Collection<ChatHistoryDocument>,
     workflowId: string,
     agentNodeId: string,
-    content: string
+    content: string,
+    role: 'user' | 'assistant'
 ): Promise<void> {
     await collection.insertOne({
         workflowId,
         nodeId: agentNodeId,
+        role,
         content,
         createdAt: new Date(),
     });
@@ -97,7 +106,7 @@ export const mongodbExecutor: NodeExecutor<MongoDBNodeData> = async ({ data, nod
         throw new NonRetriableError("MongoDB Node: Database is required");
     }
 
-    const credential = await step.run("get-mongodb-credential", async () => {
+    const credential = await step.run(`get-mongodb-credential-${nodeId}`, async () => {
         return prisma.credential.findUnique({
             where: { id: data.credentialId, userId },
         });
@@ -115,10 +124,11 @@ export const mongodbExecutor: NodeExecutor<MongoDBNodeData> = async ({ data, nod
     const agentNodeId = context._agentNodeId as string || nodeId;
     const operation = context._mongodbOperation as string || 'query';
     const messageToSave = context._messageToSave as string || '';
+    const messageRole = context._messageRole as 'user' | 'assistant' || 'assistant';
 
     try {
-        // Use unique step name based on operation to avoid Inngest memoization
-        const stepName = `mongodb-${operation}-${nodeId}`;
+        // Use unique step name based on operation and role to avoid Inngest memoization
+        const stepName = `mongodb-${operation}-${messageRole}-${nodeId}`;
         const result = await step.run(stepName, async () => {
             const connectionString = decrypt(credential.value);
 
@@ -133,8 +143,8 @@ export const mongodbExecutor: NodeExecutor<MongoDBNodeData> = async ({ data, nod
                 const collection = await ensureChatHistoryCollection(db, collectionName);
 
                 if (operation === 'save' && messageToSave) {
-                    await saveChatMessage(collection, workflowId, agentNodeId, messageToSave);
-                    return { saved: true, chatHistory: [] };
+                    await saveChatMessage(collection, workflowId, agentNodeId, messageToSave, messageRole);
+                    return { saved: true, chatHistory: [] as ChatMessageWithRole[] };
                 } else {
                     const history = await getChatHistory(collection, workflowId, agentNodeId, contextWindow);
                     return { saved: false, chatHistory: history };
@@ -160,6 +170,7 @@ export const mongodbExecutor: NodeExecutor<MongoDBNodeData> = async ({ data, nod
             },
             _mongodbOperation: undefined,
             _messageToSave: undefined,
+            _messageRole: undefined,
         };
 
     } catch (error) {

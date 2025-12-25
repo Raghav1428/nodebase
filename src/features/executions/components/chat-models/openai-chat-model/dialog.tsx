@@ -150,7 +150,7 @@ export const OpenAIChatModelDialog = ({
                             name="credentialId"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Anthropic Credential</FormLabel>
+                                    <FormLabel>OpenAI Credential</FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingCredentials || !credentials?.length}>
                                         <FormControl>
                                             <SelectTrigger className="w-full">

@@ -24,7 +24,7 @@ type GeminiChatModelNodeType = Node<GeminiChatModelNodeData>
 export const GeminiChatModelNode = memo((props: NodeProps<GeminiChatModelNodeType>) => {
     
     const [dialogOpen, setDialogOpen] = useState(false);
-    const { setNodes } = useReactFlow();
+    const { setNodes, setEdges } = useReactFlow();
 
     const nodeStatus = useNodeStatus({
         nodeId: props.id,
@@ -52,10 +52,11 @@ export const GeminiChatModelNode = memo((props: NodeProps<GeminiChatModelNodeTyp
     
     const handleDelete = () => {
         setNodes((nodes) => nodes.filter((node) => node.id !== props.id));
+        setEdges((edges) => edges.filter((edge) => edge.source !== props.id && edge.target !== props.id));
     }
     
     const nodeData = props.data;
-    const description = nodeData?.userPrompt ? `${nodeData.model || "gemini-1.5-flash"}: ${nodeData.userPrompt.slice(0, 50)}...` : "Not configured";
+    const description = nodeData?.userPrompt ? `${nodeData.model || "gemini-2.0-flash"}: ${nodeData.userPrompt.slice(0, 50)}...` : "Not configured";
     
     return (
         <>

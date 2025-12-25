@@ -24,7 +24,7 @@ type OpenAIChatModelNodeType = Node<OpenAIChatModelNodeData>
 export const OpenAIChatModelNode = memo((props: NodeProps<OpenAIChatModelNodeType>) => {
     
     const [dialogOpen, setDialogOpen] = useState(false);
-    const { setNodes } = useReactFlow();
+    const { setNodes, setEdges } = useReactFlow();
 
     const nodeStatus = useNodeStatus({
         nodeId: props.id,
@@ -52,6 +52,7 @@ export const OpenAIChatModelNode = memo((props: NodeProps<OpenAIChatModelNodeTyp
     
     const handleDelete = () => {
         setNodes((nodes) => nodes.filter((node) => node.id !== props.id));
+        setEdges((edges) => edges.filter((edge) => edge.source !== props.id && edge.target !== props.id));
     }
     
     const nodeData = props.data;

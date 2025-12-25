@@ -20,8 +20,11 @@ type GeminiChatModelNodeData = {
     userPrompt?: string;
 }
 
-// TOON format: Token-Optimized Object Notation
-type ChatMessage = string;
+// Chat message with role for proper conversation history
+type ChatMessageWithRole = {
+    role: 'user' | 'assistant';
+    content: string;
+}
 
 export const geminiChatModelExecutor: NodeExecutor<GeminiChatModelNodeData> = async ({ data, nodeId, userId, context, step, publish }) => {
     await publish(
@@ -60,12 +63,15 @@ export const geminiChatModelExecutor: NodeExecutor<GeminiChatModelNodeData> = as
     });
 
     try {
-        const chatHistory = (context._chatHistory as ChatMessage[]) || [];
+        // Get chat history with roles
+        const chatHistory = (context._chatHistory as ChatMessageWithRole[]) || [];
+
+        // Build messages with proper roles from history
         const messages: CoreMessage[] = [
             { role: 'system', content: systemPrompt },
             ...chatHistory.map(msg => ({
-                role: 'assistant' as const,
-                content: msg,
+                role: msg.role as 'user' | 'assistant',
+                content: msg.content,
             })),
             { role: 'user', content: userPrompt },
         ];
@@ -84,8 +90,7 @@ export const geminiChatModelExecutor: NodeExecutor<GeminiChatModelNodeData> = as
             },
         );
 
-        const firstContent = (result?.steps?.[0]?.content?.[0] as any);
-        const text = firstContent?.text ?? '';
+        const text = result?.steps?.[0]?.content?.[0]?.type === "text" ? result.steps[0].content[0].text : "";
 
         await publish(
             geminiChatModelChannel().status({
