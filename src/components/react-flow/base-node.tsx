@@ -5,41 +5,52 @@ import { CheckIcon, Loader2Icon, XCircleIcon } from "lucide-react";
 
 interface BaseNodeProps extends HTMLAttributes<HTMLDivElement> {
   status?: NodeStatus;
+  rounded?: "default" | "full";
 }
 
 export const BaseNode = forwardRef<
   HTMLDivElement,
   BaseNodeProps
->(({ className, status, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "relative rounded-sm border border-muted-foreground bg-card text-card-foreground hover:bg-accent",
-      "hover:ring-1",
+>(({ className, status, rounded = "default", ...props }, ref) => {
+  // For circular nodes, position icons outside the border to avoid overlap
+  const iconPositionClass = rounded === "full" 
+    ? "-right-1 -bottom-1" 
+    : "right-0.5 bottom-0.5";
+  const loadingIconPositionClass = rounded === "full"
+    ? "-right-1.5 -bottom-1.5"
+    : "-right-0.5 -bottom-0.5";
+
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "relative rounded-sm border border-muted-foreground bg-card text-card-foreground hover:bg-accent",
+        "hover:ring-1",
       // React Flow displays node elements inside of a `NodeWrapper` component,
       // which compiles down to a div with the class `react-flow__node`.
       // When a node is selected, the class `selected` is added to the
       // `react-flow__node` element. This allows us to style the node when it
       // is selected, using Tailwind's `&` selector.
-      "[.react-flow\\_\\_node.selected_&]:border-muted-foreground",
-      "[.react-flow\\_\\_node.selected_&]:shadow-lg",
-      className,
-    )}
-    tabIndex={0}
-    {...props}
-  > 
-    {props.children}
-    {status === "error" && (
-      <XCircleIcon className="absolute right-0.5 bottom-0.5 size-2 text-red-700 stroke-3"/>  
-    )}
-    {status === "success" && (
-      <CheckIcon className="absolute right-0.5 bottom-0.5 size-2 text-green-700 stroke-3"/>  
-    )}
-    {status === "loading" && (
-      <Loader2Icon className="absolute -right-0.5 -bottom-0.5 size-2 text-blue-700 stroke-3 animate-spin"/>  
-    )}
-  </div>
-));
+        "[.react-flow\\_\\_node.selected_&]:border-muted-foreground",
+        "[.react-flow\\_\\_node.selected_&]:shadow-lg",
+        className,
+      )}
+      tabIndex={0}
+      {...props}
+    > 
+      {props.children}
+      {status === "error" && (
+        <XCircleIcon className={cn("absolute size-2.5 text-red-700 stroke-3", iconPositionClass)}/>  
+      )}
+      {status === "success" && (
+        <CheckIcon className={cn("absolute size-2.5 text-green-700 stroke-3", iconPositionClass)}/>  
+      )}
+      {status === "loading" && (
+        <Loader2Icon className={cn("absolute h-2.5 w-2.5 text-blue-700 stroke-3 animate-spin z-50", loadingIconPositionClass)}/>  
+      )}
+    </div>
+  );
+});
 BaseNode.displayName = "BaseNode";
 
 /**

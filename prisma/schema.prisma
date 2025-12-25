@@ -95,6 +95,8 @@ enum CredentialType {
   ANTHROPIC
   GEMINI
   OPENROUTER
+  POSTGRES
+  MONGODB
 }
 
 model Workflow {
@@ -126,6 +128,30 @@ enum NodeType {
   DISCORD
   SLACK
   TELEGRAM
+  POSTGRES
+  MONGODB
+  MCP_TOOLS
+  AI_AGENT
+  OPENAI_CHAT_MODEL
+  ANTHROPIC_CHAT_MODEL
+  GEMINI_CHAT_MODEL
+  OPENROUTER_CHAT_MODEL
+}
+
+enum AIProvider {
+  OPENAI_CHAT_MODEL
+  ANTHROPIC_CHAT_MODEL
+  GEMINI_CHAT_MODEL
+  OPENROUTER_CHAT_MODEL
+}
+
+enum DATABASE {
+  POSTGRES
+  MONGODB
+}
+
+enum TOOLS {
+  MCP_TOOLS
 }
 
 model Node {
@@ -139,7 +165,7 @@ model Node {
   data     Json     @default("{}")
 
   credentialId String?
-  credential Credential? @relation(fields: [credentialId], references: [id])
+  credential   Credential? @relation(fields: [credentialId], references: [id])
 
   outputConnections Connection[] @relation("FromNode")
   inputConnections  Connection[] @relation("ToNode")
@@ -174,17 +200,17 @@ enum ExecutionStatus {
 }
 
 model Execution {
-  id        String    @id @default(cuid())
+  id String @id @default(cuid())
 
-  startedAt DateTime  @default(now())
+  startedAt   DateTime  @default(now())
   completedAt DateTime?
 
-  status ExecutionStatus @default(RUNNING)
-  error     String?   @db.Text
-  errorStack String?  @db.Text
+  status     ExecutionStatus @default(RUNNING)
+  error      String?         @db.Text
+  errorStack String?         @db.Text
 
   inngestEventId String @unique
-  output    Json?
+  output         Json?
 
   workflowId String
   workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)

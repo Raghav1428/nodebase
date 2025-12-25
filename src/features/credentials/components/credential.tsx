@@ -6,7 +6,7 @@ import { useCreateCredential, useUpdateCredential, useSuspenseCredential } from 
 import { useUpgradeModal } from "@/hooks/use-upgrade-modal";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,8 +53,60 @@ const credentialTypeOptions = [
         value: CredentialType.OPENROUTER,
         label: "OpenRouter",
         logo: "/logos/openrouter.svg"
+    },
+    {
+        value: CredentialType.POSTGRES,
+        label: "PostgreSQL",
+        logo: "/logos/postgres.svg"
+    },
+    {
+        value: CredentialType.MONGODB,
+        label: "MongoDB",
+        logo: "/logos/mongodb.svg"
     }
 ]
+
+const getNameHelperText = (type: CredentialType) => {
+    switch (type) {
+        case CredentialType.POSTGRES:
+            return "Enter your PostgreSQL username";
+        case CredentialType.MONGODB:
+            return "A friendly name to identify this credential";
+        default:
+            return undefined;
+    }
+};
+
+const getValueHelperText = (type: CredentialType) => {
+    switch (type) {
+        case CredentialType.POSTGRES:
+            return "Enter your PostgreSQL password";
+        case CredentialType.MONGODB:
+            return "Full connection string: mongodb+srv://user:password@cluster.mongodb.net";
+        default:
+            return undefined;
+    }
+};
+
+const getValuePlaceholder = (type: CredentialType) => {
+    switch (type) {
+        case CredentialType.POSTGRES:
+            return "Your PostgreSQL password";
+        case CredentialType.MONGODB:
+            return "mongodb+srv://user:password@cluster.mongodb.net";
+        default:
+            return "Paste your API Key here";
+    }
+};
+
+const getNamePlaceholder = (type: CredentialType) => {
+    switch (type) {
+        case CredentialType.POSTGRES:
+            return "postgres_user";
+        default:
+            return "Credential Name";
+    }
+};
 
 export const CredentialForm = ({
     initialData
@@ -75,6 +127,8 @@ export const CredentialForm = ({
             value: "",
         },
     });
+
+    const watchType = form.watch("type");
 
     const onSubmit = async (values: FormValues) => {
         if (isEdit && initialData?.id) {
@@ -114,19 +168,6 @@ export const CredentialForm = ({
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                             <FormField
                                 control={form.control}
-                                name="name"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Name</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Credential Name" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
                                 name="type"
                                 render={({ field }) => (
                                     <FormItem>
@@ -154,13 +195,37 @@ export const CredentialForm = ({
                             />
                             <FormField
                                 control={form.control}
+                                name="name"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>
+                                            {watchType === CredentialType.POSTGRES ? "Username" : "Name"}
+                                        </FormLabel>
+                                        <FormControl>
+                                            <Input placeholder={getNamePlaceholder(watchType)} {...field} />
+                                        </FormControl>
+                                        {getNameHelperText(watchType) && (
+                                            <FormDescription>{getNameHelperText(watchType)}</FormDescription>
+                                        )}
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
                                 name="value"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Value</FormLabel>
+                                        <FormLabel>
+                                            {watchType === CredentialType.POSTGRES ? "Password" : 
+                                             watchType === CredentialType.MONGODB ? "Connection String" : "Value"}
+                                        </FormLabel>
                                         <FormControl>
-                                            <Input type="password" placeholder="Paste your API Key here" {...field} />
+                                            <Input type="password" placeholder={getValuePlaceholder(watchType)} {...field} />
                                         </FormControl>
+                                        {getValueHelperText(watchType) && (
+                                            <FormDescription>{getValueHelperText(watchType)}</FormDescription>
+                                        )}
                                         <FormMessage />
                                     </FormItem>
                                 )}

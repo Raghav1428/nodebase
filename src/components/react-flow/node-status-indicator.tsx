@@ -10,20 +10,25 @@ export type NodeStatusVariant = "overlay" | "border";
 export type NodeStatusIndicatorProps = {
   status?: NodeStatus;
   variant?: NodeStatusVariant;
+  rounded?: "default" | "full";
   children: ReactNode;
   className?: string;
 };
 
 export const SpinnerLoadingIndicator = ({
   children,
+  rounded = "default",
 }: {
   children: ReactNode;
+  rounded?: "default" | "full";
 }) => {
+  const roundedClass = rounded === "full" ? "rounded-full" : "rounded-[7px]";
+  
   return (
     <div className="relative">
-      <StatusBorder className="border-blue-700/40">{children}</StatusBorder>
+      <StatusBorder className="border-blue-700/40" rounded={rounded}>{children}</StatusBorder>
 
-      <div className="absolute inset-0 z-50 rounded-[7px] bg-background/50 backdrop-blur-sm" />
+      <div className={cn("absolute inset-0 z-50 bg-background/50 backdrop-blur-sm", roundedClass)} />
       <div className="absolute inset-0 z-50">
         <span className="absolute left-[calc(50%-1.25rem)] top-[calc(50%-1.25rem)] inline-block h-10 w-10 animate-ping rounded-full bg-blue-700/20" />
 
@@ -36,10 +41,14 @@ export const SpinnerLoadingIndicator = ({
 export const BorderLoadingIndicator = ({
   children,
   className,
+  rounded = "default",
 }: {
   children: ReactNode;
   className?: string;
+  rounded?: "default" | "full";
 }) => {
+  const containerRoundedClass = rounded === "full" ? "rounded-full" : "rounded-sm";
+  
   return (
     <>
       <div className="absolute -left-[2px] -top-[2px] h-[calc(100%+4px)] w-[calc(100%+4px)]">
@@ -60,7 +69,7 @@ export const BorderLoadingIndicator = ({
         }
       `}
         </style>
-        <div className={cn("absolute inset-0 overflow-hidden rounded-sm", className,)}>
+        <div className={cn("absolute inset-0 overflow-hidden", containerRoundedClass, className,)}>
           <div className="spinner rounded-full bg-[conic-gradient(from_0deg_at_50%_50%,_rgba(42,67,233,0.5)_0deg,_rgba(42,138,246,0)_360deg)]" />
         </div>
       </div>
@@ -72,15 +81,20 @@ export const BorderLoadingIndicator = ({
 const StatusBorder = ({
   children,
   className,
+  rounded = "default",
 }: {
   children: ReactNode;
   className?: string;
+  rounded?: "default" | "full";
 }) => {
+  const roundedClass = rounded === "full" ? "rounded-full" : "rounded-md";
+  
   return (
     <>
       <div
         className={cn(
-          "absolute -left-[2px] -top-[2px] h-[calc(100%+4px)] w-[calc(100%+4px)] rounded-md border-3",
+          "absolute -left-[2px] -top-[2px] h-[calc(100%+4px)] w-[calc(100%+4px)] border-3",
+          roundedClass,
           className,
         )}
       />
@@ -92,6 +106,7 @@ const StatusBorder = ({
 export const NodeStatusIndicator = ({
   status,
   variant = "border",
+  rounded = "default",
   children,
   className,
 }: NodeStatusIndicatorProps) => {
@@ -99,18 +114,18 @@ export const NodeStatusIndicator = ({
     case "loading":
       switch (variant) {
         case "overlay":
-          return <SpinnerLoadingIndicator>{children}</SpinnerLoadingIndicator>;
+          return <SpinnerLoadingIndicator rounded={rounded}>{children}</SpinnerLoadingIndicator>;
         case "border":
-          return <BorderLoadingIndicator className={className}>{children}</BorderLoadingIndicator>;
+          return <BorderLoadingIndicator className={className} rounded={rounded}>{children}</BorderLoadingIndicator>;
         default:
           return <>{children}</>;
       }
     case "success":
       return (
-        <StatusBorder className={cn("border-green-700/50", className)}>{children}</StatusBorder>
+        <StatusBorder className={cn("border-green-700/50", className)} rounded={rounded}>{children}</StatusBorder>
       );
     case "error":
-      return <StatusBorder className={cn("border-red-700/50", className)}>{children}</StatusBorder>;
+      return <StatusBorder className={cn("border-red-700/50", className)} rounded={rounded}>{children}</StatusBorder>;
     default:
       return <>{children}</>;
   }

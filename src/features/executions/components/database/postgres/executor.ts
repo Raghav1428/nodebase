@@ -1,0 +1,214 @@
+import type { NodeExecutor } from "@/features/executions/types";
+import { NonRetriableError } from "inngest";
+import { postgresChannel } from "@/inngest/channels/postgres";
+import prisma from "@/lib/db";
+import { decrypt } from "@/lib/encryption";
+import { Client } from "pg";
+
+type PostgresNodeData = {
+    credentialId?: string;
+    host?: string;
+    port?: string;
+    database?: string;
+    tableName?: string;
+    contextWindow?: string;
+}
+
+// Chat message with role for proper conversation history
+type ChatMessageWithRole = {
+    role: 'user' | 'assistant';
+    content: string;
+}
+
+/**
+ * Validates table name to prevent SQL injection
+ * Only allows alphanumeric characters and underscores, must start with letter or underscore
+ */
+function validateTableName(name: string): string {
+    // Only allow alphanumeric characters and underscores, must start with letter or underscore
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+        throw new NonRetriableError(`PostgreSQL Node: Invalid table name: ${name}. Only alphanumeric characters and underscores are allowed, and must start with a letter or underscore.`);
+    }
+    // PostgreSQL identifier limit is 63 characters
+    if (name.length > 63) {
+        throw new NonRetriableError(`PostgreSQL Node: Table name too long: ${name}. Maximum 63 characters allowed.`);
+    }
+    return name;
+}
+
+/**
+ * Ensures the chat history table exists in the database
+ */
+async function ensureChatHistoryTable(client: Client, tableName: string): Promise<void> {
+    const safeName = validateTableName(tableName);
+
+    await client.query(`
+        CREATE TABLE IF NOT EXISTS ${safeName} (
+            id SERIAL PRIMARY KEY,
+            workflow_id TEXT NOT NULL,
+            node_id TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'assistant',
+            content TEXT NOT NULL,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_${safeName}_lookup 
+        ON ${safeName}(workflow_id, node_id, created_at DESC)
+    `);
+}
+
+/**
+ * Retrieves chat history from the database with roles
+ */
+async function getChatHistory(
+    client: Client,
+    tableName: string,
+    workflowId: string,
+    agentNodeId: string,
+    limit: number
+): Promise<ChatMessageWithRole[]> {
+    const safeName = validateTableName(tableName);
+
+    const result = await client.query(
+        `SELECT role, content FROM ${safeName} 
+         WHERE workflow_id = $1 AND node_id = $2 
+         ORDER BY created_at DESC 
+         LIMIT $3`,
+        [workflowId, agentNodeId, limit]
+    );
+
+    return result.rows.reverse().map(row => ({
+        role: row.role as 'user' | 'assistant',
+        content: row.content as string,
+    }));
+}
+
+/**
+ * Saves a chat message to the database with role
+ */
+async function saveChatMessage(
+    client: Client,
+    tableName: string,
+    workflowId: string,
+    agentNodeId: string,
+    content: string,
+    role: 'user' | 'assistant'
+): Promise<void> {
+    const safeName = validateTableName(tableName);
+
+    await client.query(
+        `INSERT INTO ${safeName} (workflow_id, node_id, role, content) 
+         VALUES ($1, $2, $3, $4)`,
+        [workflowId, agentNodeId, role, content]
+    );
+}
+
+/**
+ * PostgreSQL executor for chat history operations.
+ * 
+ * When called by AI Agent, it can:
+ * 1. Query chat history (when context._postgresOperation === 'query')
+ * 2. Save a message (when context._postgresOperation === 'save')
+ */
+export const postgresExecutor: NodeExecutor<PostgresNodeData> = async ({ data, nodeId, userId, context, step, publish }) => {
+    await publish(
+        postgresChannel().status({
+            nodeId,
+            status: "loading",
+        }),
+    );
+
+    if (!data.credentialId) {
+        await publish(postgresChannel().status({ nodeId, status: "error" }));
+        throw new NonRetriableError("PostgreSQL Node: Credential is required");
+    }
+
+    if (!data.host) {
+        await publish(postgresChannel().status({ nodeId, status: "error" }));
+        throw new NonRetriableError("PostgreSQL Node: Host is required");
+    }
+
+    const credential = await step.run("get-postgres-credential", async () => {
+        return prisma.credential.findUnique({
+            where: { id: data.credentialId, userId },
+        });
+    });
+
+    if (!credential) {
+        await publish(postgresChannel().status({ nodeId, status: "error" }));
+        throw new NonRetriableError("PostgreSQL Node: Credential not found");
+    }
+
+    const tableName = data.tableName || 'nodebase_chat_histories';
+    const contextWindow = parseInt(data.contextWindow || '20', 10);
+
+    const workflowId = context._workflowId as string || '';
+    const agentNodeId = context._agentNodeId as string || nodeId;
+    const operation = context._postgresOperation as string || 'query';
+    const messageToSave = context._messageToSave as string || '';
+    const messageRole = context._messageRole as 'user' | 'assistant' || 'assistant';
+
+    try {
+        // Use unique step name based on operation and role to avoid Inngest memoization
+        const stepName = `postgres-${operation}-${messageRole}-${nodeId}`;
+        const result = await step.run(stepName, async () => {
+            const client = new Client({
+                host: data.host || 'localhost',
+                port: parseInt(data.port || '5432', 10),
+                database: data.database || 'postgres',
+                password: decrypt(credential.value),
+                user: credential.name,
+                ssl: { rejectUnauthorized: false },
+            });
+            await client.connect();
+
+            try {
+                await ensureChatHistoryTable(client, tableName);
+
+                if (operation === 'save' && messageToSave) {
+                    await saveChatMessage(client, tableName, workflowId, agentNodeId, messageToSave, messageRole);
+                    return { saved: true, chatHistory: [] as ChatMessageWithRole[] };
+                } else {
+                    const history = await getChatHistory(client, tableName, workflowId, agentNodeId, contextWindow);
+                    return { saved: false, chatHistory: history };
+                }
+            } finally {
+                await client.end();
+            }
+        });
+
+        await publish(
+            postgresChannel().status({
+                nodeId,
+                status: "success",
+            }),
+        );
+
+        return {
+            ...context,
+            _postgresResult: {
+                chatHistory: result.chatHistory,
+                saved: result.saved,
+                tableName,
+            },
+            // Clean up internal context fields
+            _postgresOperation: undefined,
+            _messageToSave: undefined,
+            _messageRole: undefined,
+        };
+
+    } catch (error) {
+        await publish(
+            postgresChannel().status({
+                nodeId,
+                status: "error",
+            }),
+        );
+
+        throw new NonRetriableError("PostgreSQL Node: Operation failed", {
+            cause: error,
+        });
+    }
+};

@@ -47,7 +47,10 @@ export async function getAvailableGeminiModels(credentialId: string): Promise<st
     }
 
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${decrypt(apiKey)}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models`, {
+            headers: {
+                'X-goog-api-key': decrypt(apiKey)
+            },  
             next: { revalidate: 3600 } // Cache for 1 hour
         });
 
@@ -57,7 +60,7 @@ export async function getAvailableGeminiModels(credentialId: string): Promise<st
 
         const data = await response.json();
         
-        return data.models
+        return (data.models ?? [])
             .filter(
                 (m: any) =>
                 m.supportedGenerationMethods?.includes("generateContent") &&
