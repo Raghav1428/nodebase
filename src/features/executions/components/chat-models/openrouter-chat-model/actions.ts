@@ -62,7 +62,7 @@ export async function getAvailableOpenRouterModels(credentialId: string): Promis
     const data = await response.json();
 
     return (
-      data.data
+      (data.data ?? [])
         .map((m: any) => m.id as string)
         .sort()
     );

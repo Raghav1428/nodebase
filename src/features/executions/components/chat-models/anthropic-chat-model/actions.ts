@@ -65,10 +65,8 @@ export async function getAvailableAnthropicModels(credentialId: string): Promise
 
     const list = Array.isArray(data.data) ? data.data : [];
 
-    return list
-      .filter((m: any) => 
-        typeof m.id === "string" && m.id.startsWith("claude-")
-      )
+    return (list ?? [])
+      .filter((m: any) => typeof m.id === "string" && m.id.startsWith("claude-"))
       .map((m: any) => m.id as string)
       .sort();
   } catch (error) {

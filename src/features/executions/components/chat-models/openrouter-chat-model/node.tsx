@@ -56,7 +56,7 @@ export const OpenRouterChatModelNode = memo((props: NodeProps<OpenRouterChatMode
     }
     
     const nodeData = props.data;
-    const description = nodeData?.userPrompt ? `${nodeData.model || "claude-sonnet-4-20250514"}: ${nodeData.userPrompt.slice(0, 50)}...` : "Not configured";
+    const description = nodeData?.userPrompt ? `${nodeData.model || "openai/gpt-4o-mini"}: ${nodeData.userPrompt.slice(0, 50)}...` : "Not configured";
     
     return (
         <>

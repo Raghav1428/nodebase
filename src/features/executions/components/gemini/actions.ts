@@ -60,7 +60,7 @@ export async function getAvailableGeminiModels(credentialId: string): Promise<st
 
         const data = await response.json();
         
-        return data.models
+        return (data.models ?? [])
             .filter(
                 (m: any) =>
                 m.supportedGenerationMethods?.includes("generateContent") &&

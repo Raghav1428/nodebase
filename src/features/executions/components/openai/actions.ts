@@ -62,8 +62,7 @@ export async function getAvailableOpenAIModels(credentialId: string): Promise<st
     const data = await response.json();
 
     return (
-      data.data
-        // keep only chat-ish models; tweak this as you like
+      (data.data ?? [])
         .filter(
           (m: any) =>
             typeof m.id === "string" &&
