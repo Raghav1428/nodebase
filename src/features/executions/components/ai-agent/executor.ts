@@ -55,9 +55,6 @@ export const aiAgentExecutor: NodeExecutor<AiAgentData> = async ({ data, nodeId,
         );
     });
 
-    // Track cleanup functions for MCP clients
-    const cleanupFunctions: (() => Promise<void>)[] = [];
-
     try {
         if (!data.variableName) {
             throw new NonRetriableError("AI Agent Node: Variable name is required");
@@ -328,15 +325,6 @@ export const aiAgentExecutor: NodeExecutor<AiAgentData> = async ({ data, nodeId,
         const postgresSaveResult = updatedContext._postgresResult as { chatHistory: ChatMessageWithRole[]; saved: boolean; tableName: string } | undefined;
         const mongodbSaveResult = updatedContext._mongodbResult as { chatHistory: ChatMessageWithRole[]; saved: boolean; collectionName: string } | undefined;
 
-        // Cleanup MCP clients
-        for (const cleanup of cleanupFunctions) {
-            try {
-                await cleanup();
-            } catch (e) {
-                console.warn("AI Agent: Failed to cleanup MCP client", e);
-            }
-        }
-
         await publish(
             aiAgentChannel().status({
                 nodeId,
@@ -410,15 +398,6 @@ export const aiAgentExecutor: NodeExecutor<AiAgentData> = async ({ data, nodeId,
         };
 
     } catch (error) {
-        // Cleanup MCP clients on error
-        for (const cleanup of cleanupFunctions) {
-            try {
-                await cleanup();
-            } catch (e) {
-                console.warn("AI Agent: Failed to cleanup MCP client on error", e);
-            }
-        }
-
         await step.run(`publish-ai-agent-error-${nodeId}`, async () => {
             await publish(
                 aiAgentChannel().status({

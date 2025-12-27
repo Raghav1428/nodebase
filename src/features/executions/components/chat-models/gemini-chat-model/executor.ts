@@ -160,7 +160,11 @@ export const geminiChatModelExecutor: NodeExecutor<GeminiChatModelNodeData> = as
 
         // Cleanup MCP client after generateText completes
         if (mcpCleanup) {
-            await mcpCleanup();
+            try {
+                await mcpCleanup();
+            } catch (e) {
+                console.warn("Gemini Chat Model: Failed to cleanup MCP client after success:", e);
+            }
         }
 
         // Use unique step ID for publish

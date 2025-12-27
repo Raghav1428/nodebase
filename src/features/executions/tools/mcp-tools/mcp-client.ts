@@ -1,5 +1,6 @@
 import { createMCPClient, MCPClient } from '@ai-sdk/mcp';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { parseArgs } from './parse-args';
 
 export interface McpToolsConfig {
     transportType: 'sse' | 'stdio' | 'http';
@@ -39,7 +40,7 @@ export async function createMcpToolsClient(config: McpToolsConfig): Promise<MCPC
 
     if (transportType === 'stdio' && command) {
         // Stdio transport for local MCP servers
-        const argsArray = args ? args.split(' ').filter(a => a.trim()) : [];
+        const argsArray = parseArgs(args);
         const client = await createMCPClient({
             transport: new StdioClientTransport({
                 command,

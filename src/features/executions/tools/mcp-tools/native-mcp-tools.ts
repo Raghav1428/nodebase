@@ -9,6 +9,7 @@ import { z, ZodTypeAny } from 'zod';
 import { createMCPClient, MCPClient } from '@ai-sdk/mcp';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { experimental_createMCPClient as createSSEMCPClient } from 'ai';
+import { parseArgs } from './parse-args';
 
 // Export the McpToolsConfig type for consumers
 export interface McpToolsConfig {
@@ -131,7 +132,7 @@ export async function createNativeMcpTools(config: McpToolsConfig): Promise<Nati
 
     // Create transport based on config
     if (transportType === 'stdio' && command) {
-        const argsArray = args ? args.split(' ').filter(a => a.trim()) : [];
+        const argsArray = parseArgs(args);
         const transport = new StdioClientTransport({ command, args: argsArray });
 
         // Create MCP client
@@ -200,14 +201,8 @@ export async function createNativeMcpTools(config: McpToolsConfig): Promise<Nati
             },
         };
     } else if ((transportType === 'sse' || transportType === 'http') && serverUrl) {
-        // Support for SSE/HTTP transport using experimental AI SDK client
-        // Validate and map transport type - the experimental client primarily supports 'sse'
-        // 'http' is mapped to 'sse' as they use similar URL-based connectivity
-        const mappedTransportType = transportType === 'http' ? 'sse' : transportType;
-
-        if (mappedTransportType !== 'sse') {
-            throw new Error(`Unsupported transport type for URL-based MCP: ${transportType}. Expected 'sse' or 'http'.`);
-        }
+        
+        const mappedTransportType = 'sse' as const;
 
         try {
             const client = await createSSEMCPClient({

@@ -58,7 +58,7 @@ export const McpToolsDialog = ({
     const form = useForm<McpToolsFormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            transportType: defaultValues.transportType || "stdio",
+            transportType: defaultValues.transportType || "sse",
             serverUrl: defaultValues.serverUrl || '',
             command: defaultValues.command || '',
             args: defaultValues.args || '',
