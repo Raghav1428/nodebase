@@ -48,18 +48,6 @@ export function getMcpConfigFromNodeData(data: McpToolsData): McpToolsConfig {
 }
 
 /**
- * Gets MCP tools from node data configuration.
- * Used by AI Agent to get tools for generateText.
- */
-export async function getMcpToolsFromNodeData(data: McpToolsData): Promise<{
-    tools: Record<string, unknown>;
-    cleanup: () => Promise<void>;
-}> {
-    const config = getMcpConfigFromNodeData(data);
-    return createMcpToolsForAgent(config);
-}
-
-/**
  * MCP Tools Executor
  * 
  * When called by AI Agent (_isAgentToolsRequest = true):

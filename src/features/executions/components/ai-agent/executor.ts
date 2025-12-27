@@ -5,7 +5,7 @@ import prisma from "@/lib/db";
 import { AIProvider, DATABASE, TOOLS, NodeType } from "@/generated/prisma";
 import { getExecutor } from "../../lib/executor-registry";
 import Handlebars from "handlebars";
-import { getMcpToolsFromNodeData, type McpToolsData } from "../../tools/mcp-tools/executor";
+import { type McpToolsData } from "../../tools/mcp-tools/executor";
 
 type AiAgentData = {
     variableName?: string;
