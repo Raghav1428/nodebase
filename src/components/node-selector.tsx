@@ -5,7 +5,13 @@ import { useReactFlow } from "@xyflow/react";
 import {
     GlobeIcon,
     MousePointer2Icon,
-    TimerIcon
+    TimerIcon,
+    BotIcon,
+    DatabaseIcon,
+    WrenchIcon,
+    MessageSquareIcon,
+    BrainCircuitIcon,
+    ZapIcon,
 } from "lucide-react"
 import { useCallback } from "react";
 import { toast } from "sonner";
@@ -19,12 +25,14 @@ import {
 } from "@/components/ui/sheet";
 import { NodeType } from "@/generated/prisma";
 import { Separator } from "./ui/separator";
+import { Badge } from "./ui/badge";
 
 export type NodeTypeOption = {
     type: NodeType;
     label: string;
     description: string;
     icon: React.ComponentType<{ className?: string }> | string;
+    badge?: string;
 };
 
 const triggerNodes: NodeTypeOption[] = [
@@ -60,102 +68,124 @@ const triggerNodes: NodeTypeOption[] = [
     },
 ];
 
-const executionNodes: NodeTypeOption[] =[
+// AI Agent main node
+const aiAgentNode: NodeTypeOption = {
+    type: NodeType.AI_AGENT,
+    label: "AI Agent",
+    description: "Autonomous AI agent with memory, tools, and chat models",
+    icon: "/logos/ai-agent.svg",
+};
+
+// Nodes that connect to AI Agent
+const aiAgentChatModels: NodeTypeOption[] = [
+    {
+        type: NodeType.GEMINI_CHAT_MODEL,
+        label: "Gemini Chat Model",
+        description: "Google's Gemini for AI Agent conversations",
+        icon: "/logos/gemini.svg",
+        badge: "AI Agent",
+    },
+    {
+        type: NodeType.OPENAI_CHAT_MODEL,
+        label: "OpenAI Chat Model",
+        description: "GPT models for AI Agent conversations",
+        icon: "/logos/openai.svg",
+        badge: "AI Agent",
+    },
+    {
+        type: NodeType.ANTHROPIC_CHAT_MODEL,
+        label: "Anthropic Chat Model",
+        description: "Claude models for AI Agent conversations",
+        icon: "/logos/anthropic.svg",
+        badge: "AI Agent",
+    },
+    {
+        type: NodeType.OPENROUTER_CHAT_MODEL,
+        label: "OpenRouter Chat Model",
+        description: "Access multiple models via OpenRouter for AI Agent",
+        icon: "/logos/openrouter.svg",
+        badge: "AI Agent",
+    },
+];
+
+const aiAgentDatabase: NodeTypeOption[] = [
+    {
+        type: NodeType.POSTGRES,
+        label: "PostgreSQL",
+        description: "Store AI Agent chat history in PostgreSQL",
+        icon: "/logos/postgres.svg",
+        badge: "AI Agent",
+    },
+    {
+        type: NodeType.MONGODB,
+        label: "MongoDB",
+        description: "Store AI Agent chat history in MongoDB",
+        icon: "/logos/mongodb.svg",
+        badge: "AI Agent",
+    },
+];
+
+const aiAgentTools: NodeTypeOption[] = [
+    {
+        type: NodeType.MCP_TOOLS,
+        label: "MCP Tools",
+        description: "Connect MCP server tools to AI Agent",
+        icon: "/logos/mcp.svg",
+        badge: "AI Agent",
+    },
+];
+
+const actionNodes: NodeTypeOption[] = [
     {
         type: NodeType.HTTP_REQUEST,
-        label: "HTTP request",
-        description: "Makes a HTTP request",
+        label: "HTTP Request",
+        description: "Make HTTP requests to APIs",
         icon: GlobeIcon,
     },
     {
         type: NodeType.GEMINI,
         label: "Gemini",
-        description: "Uses Gemini to generate a response",
+        description: "Generate text with Gemini (standalone)",
         icon: "/logos/gemini.svg",
     },
     {
         type: NodeType.OPENAI,
         label: "OpenAI",
-        description: "Uses OpenAI to generate a response",
+        description: "Generate text with OpenAI (standalone)",
         icon: "/logos/openai.svg",
     },
     {
         type: NodeType.ANTHROPIC,
         label: "Anthropic",
-        description: "Uses Anthropic to generate a response",
+        description: "Generate text with Anthropic (standalone)",
         icon: "/logos/anthropic.svg",
     },
     {
         type: NodeType.OPENROUTER,
         label: "OpenRouter",
-        description: "Uses OpenRouter to generate a response",
+        description: "Generate text with OpenRouter (standalone)",
         icon: "/logos/openrouter.svg",
     },
+];
+
+const messagingNodes: NodeTypeOption[] = [
     {
         type: NodeType.DISCORD,
         label: "Discord",
-        description: "Send a message to Discord",
+        description: "Send messages to Discord",
         icon: "/logos/discord.svg",
     },
     {
         type: NodeType.SLACK,
         label: "Slack",
-        description: "Send a message to Slack",
+        description: "Send messages to Slack",
         icon: "/logos/slack.svg",
     },
     {
         type: NodeType.TELEGRAM,
         label: "Telegram",
-        description: "Send a message to Telegram",
+        description: "Send messages to Telegram",
         icon: "/logos/telegram.svg",
-    },
-    {
-        type: NodeType.POSTGRES,
-        label: "PostgreSQL",
-        description: "Execute PostgreSQL database queries",
-        icon: "/logos/postgres.svg",
-    },
-    {
-        type: NodeType.MONGODB,
-        label: "MongoDB",
-        description: "Execute MongoDB database operations",
-        icon: "/logos/mongodb.svg",
-    },
-    {
-        type: NodeType.MCP_TOOLS,
-        label: "MCP Tools",
-        description: "Connect to MCP server and use tools",
-        icon: "/logos/mcp.svg",
-    },
-    {
-        type: NodeType.AI_AGENT,
-        label: "AI Agent",
-        description: "Autonomous AI agent with tool calling",
-        icon: "/logos/ai-agent.svg",
-    },
-    {
-        type: NodeType.OPENAI_CHAT_MODEL,
-        label: "OpenAI Chat Model",
-        description: "Uses OpenAI chat model to generate a response in an AI agent",
-        icon: "/logos/openai.svg",
-    },
-    {
-        type: NodeType.ANTHROPIC_CHAT_MODEL,
-        label: "Anthropic Chat Model",
-        description: "Uses Anthropic chat model to generate a response in an AI agent",
-        icon: "/logos/anthropic.svg",
-    },
-    {
-        type: NodeType.GEMINI_CHAT_MODEL,
-        label: "Gemini Chat Model",
-        description: "Uses Gemini chat model to generate a response in an AI agent",
-        icon: "/logos/gemini.svg",
-    },
-    {
-        type: NodeType.OPENROUTER_CHAT_MODEL,
-        label: "OpenRouter Chat Model",
-        description: "Uses OpenRouter chat model to generate a response in an AI agent",
-        icon: "/logos/openrouter.svg",
     },
 ];
 
@@ -165,16 +195,48 @@ interface NodeSelectorProps {
     children: React.ReactNode;
 };
 
-/**
- * Renders a right-side sheet UI that lets the user pick a node type to add to the workflow.
- *
- * Selecting a node will add a new node to the React Flow instance: if an `INITIAL` node exists the selection replaces all nodes, otherwise it appends the new node positioned near the center of the viewport. Selecting a `MANUAL_TRIGGER` will show an error and abort if a manual trigger already exists.
- *
- * @param open - Whether the sheet is open
- * @param onOpenChange - Callback invoked with the new open state when the sheet is opened or closed
- * @param children - Trigger element that opens the sheet when interacted with
- * @returns The NodeSelector sheet component JSX
- */
+function SectionHeader({ icon: Icon, title }: { icon: React.ComponentType<{ className?: string }>, title: string }) {
+    return (
+        <div className="flex items-center gap-2 px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <Icon className="size-4" />
+            {title}
+        </div>
+    );
+}
+
+function NodeItem({ nodeType, onClick }: { nodeType: NodeTypeOption, onClick: () => void }) {
+    const Icon = nodeType.icon;
+    return (
+        <div
+            className="w-full justify-start h-auto py-4 px-4 rounded-none cursor-pointer border-l-2 border-transparent hover:border-l-primary hover:bg-muted/50 transition-colors"
+            onClick={onClick}
+        >
+            <div className="flex items-center gap-4 w-full overflow-hidden">
+                {typeof Icon === "string" ? (
+                    <img src={Icon} alt={nodeType.label} className="size-5 rounded-sm object-contain" />
+                ) : (
+                    <Icon className="size-5" />
+                )}
+                <div className="flex flex-col items-start text-left flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">
+                            {nodeType.label}
+                        </span>
+                        {nodeType.badge && (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+                                → {nodeType.badge}
+                            </Badge>
+                        )}
+                    </div>
+                    <span className="text-xs text-muted-foreground truncate w-full">
+                        {nodeType.description}
+                    </span>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export function NodeSelector ({
     open,
     onOpenChange,
@@ -231,68 +293,99 @@ export function NodeSelector ({
             <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
                 <SheetHeader>
                     <SheetTitle>
-                        What triggers this workflow?
+                        Add Node
                     </SheetTitle>
                     <SheetDescription>
-                        A trigger is a step that starts your workflow
+                        Select a node to add to your workflow
                     </SheetDescription>
                 </SheetHeader>
+
+                {/* Triggers */}
+                <SectionHeader icon={MousePointer2Icon} title="Triggers" />
                 <div>
-                    {triggerNodes.map((nodeType) => {
-                        const Icon = nodeType.icon;
-                        return (
-                            <div
-                                key={nodeType.type}
-                                className="w-full justify-start h-auto py-5 px-4 rounded-none cursor-pointer border-l-2 border-transparent hover:border-l-primary"
-                                onClick={() => handleNodeSelect(nodeType)}
-                            >
-                                <div className="flex items-center gap-6 w-full overflow-hidden">
-                                    {typeof Icon === "string" ? (
-                                        <img src={Icon} alt={nodeType.label} className="size-5 rounded-sm object-contain" />
-                                    ) : (
-                                        <Icon className="size-5" />
-                                    )}
-                                    <div className="flex flex-col items-start text-left">
-                                        <span className="font-medium text-sm">
-                                            {nodeType.label}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground">
-                                            {nodeType.description}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        )
-                    })}
+                    {triggerNodes.map((nodeType) => (
+                        <NodeItem 
+                            key={nodeType.type} 
+                            nodeType={nodeType} 
+                            onClick={() => handleNodeSelect(nodeType)} 
+                        />
+                    ))}
                 </div>
-                <Separator />
+
+                <Separator className="my-1" />
+
+                {/* Actions */}
+                <SectionHeader icon={ZapIcon} title="Actions" />
                 <div>
-                    {executionNodes.map((nodeType) => {
-                        const Icon = nodeType.icon;
-                        return (
-                            <div
-                                key={nodeType.type}
-                                className="w-full justify-start h-auto py-5 px-4 rounded-none cursor-pointer border-l-2 border-transparent hover:border-l-primary"
-                                onClick={() => handleNodeSelect(nodeType)}
-                            >
-                                <div className="flex items-center gap-6 w-full overflow-hidden">
-                                    {typeof Icon === "string" ? (
-                                        <img src={Icon} alt={nodeType.label} className="size-5 rounded-sm object-contain" />
-                                    ) : (
-                                        <Icon className="size-5" />
-                                    )}
-                                    <div className="flex flex-col items-start text-left">
-                                        <span className="font-medium text-sm">
-                                            {nodeType.label}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground">
-                                            {nodeType.description}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        )
-                    })}
+                    {actionNodes.map((nodeType) => (
+                        <NodeItem 
+                            key={nodeType.type} 
+                            nodeType={nodeType} 
+                            onClick={() => handleNodeSelect(nodeType)} 
+                        />
+                    ))}
+                </div>
+
+                <Separator className="my-1" />
+
+                {/* Messaging */}
+                <SectionHeader icon={MessageSquareIcon} title="Messaging" />
+                <div>
+                    {messagingNodes.map((nodeType) => (
+                        <NodeItem 
+                            key={nodeType.type} 
+                            nodeType={nodeType} 
+                            onClick={() => handleNodeSelect(nodeType)} 
+                        />
+                    ))}
+                </div>
+
+                <Separator className="my-1" />
+
+                {/* AI Agent Section */}
+                <SectionHeader icon={BotIcon} title="AI Agent" />
+                <NodeItem 
+                    nodeType={aiAgentNode} 
+                    onClick={() => handleNodeSelect(aiAgentNode)} 
+                />
+                
+                {/* AI Agent Sub-nodes */}
+                <div className="pl-2 border-l-2 border-muted ml-4">
+                    <div className="px-4 py-2 text-xs text-muted-foreground flex items-center gap-1">
+                        <BrainCircuitIcon className="size-3" />
+                        <span>Chat Models</span>
+                    </div>
+                    {aiAgentChatModels.map((nodeType) => (
+                        <NodeItem 
+                            key={nodeType.type} 
+                            nodeType={nodeType} 
+                            onClick={() => handleNodeSelect(nodeType)} 
+                        />
+                    ))}
+                    
+                    <div className="px-4 py-2 text-xs text-muted-foreground flex items-center gap-1">
+                        <DatabaseIcon className="size-3" />
+                        <span>Memory / Database</span>
+                    </div>
+                    {aiAgentDatabase.map((nodeType) => (
+                        <NodeItem 
+                            key={nodeType.type} 
+                            nodeType={nodeType} 
+                            onClick={() => handleNodeSelect(nodeType)} 
+                        />
+                    ))}
+                    
+                    <div className="px-4 py-2 text-xs text-muted-foreground flex items-center gap-1">
+                        <WrenchIcon className="size-3" />
+                        <span>Tools</span>
+                    </div>
+                    {aiAgentTools.map((nodeType) => (
+                        <NodeItem 
+                            key={nodeType.type} 
+                            nodeType={nodeType} 
+                            onClick={() => handleNodeSelect(nodeType)} 
+                        />
+                    ))}
                 </div>
             </SheetContent>
         </Sheet>
