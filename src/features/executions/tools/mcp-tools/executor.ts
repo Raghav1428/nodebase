@@ -2,9 +2,7 @@ import type { NodeExecutor } from "@/features/executions/types";
 import { NonRetriableError } from "inngest";
 import Handlebars from "handlebars";
 import { mcpToolsChannel } from "@/inngest/channels/mcp-tools";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
+import { createMcpToolsForAgent, type McpToolsConfig } from "./mcp-client";
 
 Handlebars.registerHelper("json", (context) => {
     const jsonString = JSON.stringify(context);
@@ -12,115 +10,116 @@ Handlebars.registerHelper("json", (context) => {
     return safeString;
 });
 
-type McpToolsData = {
-    variableName?: string;
+export type McpToolsData = {
     serverUrl?: string;
-    transportType?: "sse" | "stdio";
-    toolName?: string;
-    toolArguments?: string;
+    transportType?: "sse" | "stdio" | "http";
     command?: string;
     args?: string;
 }
 
-export const mcpToolsExecutor: NodeExecutor<McpToolsData> = async ({ data, nodeId, context, step, publish }) => {
-    await publish(
-        mcpToolsChannel().status({
-            nodeId,
-            status: "loading",
-        }),
-    );
-
-    if (!data.variableName) {
-        await publish(
-            mcpToolsChannel().status({
-                nodeId,
-                status: "error",
-            }),
-        );
-        throw new NonRetriableError("MCP Tools Node: Variable name is required");
-    }
-
-    if (!data.toolName) {
-        await publish(
-            mcpToolsChannel().status({
-                nodeId,
-                status: "error",
-            }),
-        );
-        throw new NonRetriableError("MCP Tools Node: Tool name is required");
-    }
-
+/**
+ * Converts McpToolsData to McpToolsConfig.
+ * Validates transport-specific required fields before building the config.
+ */
+export function getMcpConfigFromNodeData(data: McpToolsData): McpToolsConfig {
     const transportType = data.transportType || "sse";
 
-    // Parse tool arguments with Handlebars
-    let toolArgs: Record<string, unknown> = {};
-    if (data.toolArguments) {
-        try {
-            const compiled = Handlebars.compile(data.toolArguments)(context);
-            toolArgs = JSON.parse(compiled);
-        } catch {
-            toolArgs = {};
+    // Validate transport-specific required fields
+    if (transportType === "stdio") {
+        if (!data.command) {
+            throw new Error(
+                `MCP Tools: 'command' is required for stdio transport. Please specify the command to execute.`
+            );
+        }
+    } else if (transportType === "sse" || transportType === "http") {
+        if (!data.serverUrl) {
+            throw new Error(
+                `MCP Tools: 'serverUrl' is required for ${transportType} transport. Please specify the server URL.`
+            );
         }
     }
 
-    try {
-        const result = await step.run("execute-mcp-tool", async () => {
-            const client = new Client({
-                name: "nodebase-workflow",
-                version: "1.0.0",
-            });
+    return {
+        transportType,
+        serverUrl: data.serverUrl,
+        command: data.command,
+        args: data.args,
+    };
+}
 
-            let transport;
+/**
+ * Gets MCP tools from node data configuration.
+ * Used by AI Agent to get tools for generateText.
+ */
+export async function getMcpToolsFromNodeData(data: McpToolsData): Promise<{
+    tools: Record<string, unknown>;
+    cleanup: () => Promise<void>;
+}> {
+    const config = getMcpConfigFromNodeData(data);
+    return createMcpToolsForAgent(config);
+}
 
-            if (transportType === "sse" && data.serverUrl) {
-                transport = new SSEClientTransport(new URL(data.serverUrl));
-            } else if (transportType === "stdio" && data.command) {
-                const args = data.args ? data.args.split(" ") : [];
-                transport = new StdioClientTransport({
-                    command: data.command,
-                    args,
-                });
-            } else {
-                throw new Error("Invalid transport configuration");
-            }
+/**
+ * MCP Tools Executor
+ * 
+ * When called by AI Agent (_isAgentToolsRequest = true):
+ * - Publishes loading/success status
+ * - Returns the MCP config for the chat model to use
+ * 
+ * When workflow executor tries to run it independently:
+ * - Should not happen (MCP Tools must be connected to AI Agent)
+ */
+export const mcpToolsExecutor: NodeExecutor<McpToolsData> = async ({ data, nodeId, context, step, publish }) => {
+    // Check if this is being called by the AI Agent
+    const isAgentRequest = context._isAgentToolsRequest === true;
 
-            await client.connect(transport);
+    if (!isAgentRequest) {
+        // MCP Tools should only be executed through AI Agent
+        // If running independently, just return without action
+        return context;
+    }
 
-            try {
-                const toolResult = await client.callTool({
-                    name: data.toolName!,
-                    arguments: toolArgs,
-                });
-
-                return toolResult;
-            } finally {
-                await client.close();
-            }
-        });
-
+    // Called by AI Agent - publish loading status
+    await step.run(`publish-mcp-loading-${nodeId}`, async () => {
         await publish(
             mcpToolsChannel().status({
                 nodeId,
-                status: "success",
+                status: "loading",
             }),
         );
+    });
 
+    try {
+        // Get the MCP config
+        const mcpConfig = getMcpConfigFromNodeData(data);
+
+        // Publish success status
+        await step.run(`publish-mcp-success-${nodeId}`, async () => {
+            await publish(
+                mcpToolsChannel().status({
+                    nodeId,
+                    status: "success",
+                }),
+            );
+        });
+
+        // Return the config for the AI Agent and chat model to use
         return {
             ...context,
-            [data.variableName]: {
-                toolResult: result,
-            }
+            _mcpToolsConfig: mcpConfig,
         };
 
     } catch (error) {
-        await publish(
-            mcpToolsChannel().status({
-                nodeId,
-                status: "error",
-            }),
-        );
+        await step.run(`publish-mcp-error-exec-${nodeId}`, async () => {
+            await publish(
+                mcpToolsChannel().status({
+                    nodeId,
+                    status: "error",
+                }),
+            );
+        });
 
-        throw new NonRetriableError("MCP Tools Node: Tool execution failed", {
+        throw new NonRetriableError("MCP Tools Node: Failed to configure tools", {
             cause: error,
         });
     }

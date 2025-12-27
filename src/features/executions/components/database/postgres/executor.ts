@@ -113,12 +113,19 @@ async function saveChatMessage(
  * 2. Save a message (when context._postgresOperation === 'save')
  */
 export const postgresExecutor: NodeExecutor<PostgresNodeData> = async ({ data, nodeId, userId, context, step, publish }) => {
-    await publish(
-        postgresChannel().status({
-            nodeId,
-            status: "loading",
-        }),
-    );
+    // Get operation early for unique step ID
+    const operation = context._postgresOperation as string || 'query';
+    const messageRole = context._messageRole as 'user' | 'assistant' || 'assistant';
+
+    // Use unique step ID for publish to avoid Inngest parallel step warnings
+    await step.run(`publish-postgres-loading-${operation}-${messageRole}-${nodeId}`, async () => {
+        await publish(
+            postgresChannel().status({
+                nodeId,
+                status: "loading",
+            }),
+        );
+    });
 
     if (!data.credentialId) {
         await publish(postgresChannel().status({ nodeId, status: "error" }));
@@ -144,14 +151,11 @@ export const postgresExecutor: NodeExecutor<PostgresNodeData> = async ({ data, n
     const tableName = data.tableName || 'nodebase_chat_histories';
     const contextWindow = parseInt(data.contextWindow || '20', 10);
 
-    const workflowId = context._workflowId as string || '';
-    const agentNodeId = context._agentNodeId as string || nodeId;
-    const operation = context._postgresOperation as string || 'query';
+    const workflowId = context._workflowId as string || ''; 
+    const agentNodeId = context._agentNodeId as string || nodeId; 
     const messageToSave = context._messageToSave as string || '';
-    const messageRole = context._messageRole as 'user' | 'assistant' || 'assistant';
 
     try {
-        // Use unique step name based on operation and role to avoid Inngest memoization
         const stepName = `postgres-${operation}-${messageRole}-${nodeId}`;
         const result = await step.run(stepName, async () => {
             const client = new Client({
@@ -179,12 +183,14 @@ export const postgresExecutor: NodeExecutor<PostgresNodeData> = async ({ data, n
             }
         });
 
-        await publish(
-            postgresChannel().status({
-                nodeId,
-                status: "success",
-            }),
-        );
+        await step.run(`publish-postgres-success-${operation}-${messageRole}-${nodeId}`, async () => {
+            await publish(
+                postgresChannel().status({
+                    nodeId,
+                    status: "success",
+                }),
+            );
+        });
 
         return {
             ...context,
@@ -200,12 +206,14 @@ export const postgresExecutor: NodeExecutor<PostgresNodeData> = async ({ data, n
         };
 
     } catch (error) {
-        await publish(
-            postgresChannel().status({
-                nodeId,
-                status: "error",
-            }),
-        );
+        await step.run(`publish-postgres-error-${operation}-${messageRole}-${nodeId}`, async () => {
+            await publish(
+                postgresChannel().status({
+                    nodeId,
+                    status: "error",
+                }),
+            );
+        });
 
         throw new NonRetriableError("PostgreSQL Node: Operation failed", {
             cause: error,

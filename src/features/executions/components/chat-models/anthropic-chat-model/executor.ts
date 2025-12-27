@@ -6,6 +6,7 @@ import Handlebars from "handlebars";
 import { anthropicChatModelChannel } from "@/inngest/channels/anthropic-chat-model";
 import prisma from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
+import { createNativeMcpTools, type McpToolsConfig } from "@/features/executions/tools/mcp-tools/native-mcp-tools";
 
 Handlebars.registerHelper("json", (context) => {
     const jsonString = JSON.stringify(context);
@@ -26,13 +27,23 @@ type ChatMessageWithRole = {
     content: string;
 }
 
+// MCP Tools config from AI Agent
+type McpToolsNodeConfig = {
+    transportType?: 'sse' | 'stdio' | 'http';
+    serverUrl?: string;
+    command?: string;
+    args?: string;
+}
+
 export const anthropicChatModelExecutor: NodeExecutor<AnthropicChatModelNodeData> = async ({ data, nodeId, userId, context, step, publish }) => {
-    await publish(
-        anthropicChatModelChannel().status({
-            nodeId,
-            status: "loading",
-        }),
-    );
+    await step.run(`publish-anthropic-loading-${nodeId}`, async () => {
+        await publish(
+            anthropicChatModelChannel().status({
+                nodeId,
+                status: "loading",
+            }),
+        );
+    });
 
     if (!data.credentialId) {
         await publish(anthropicChatModelChannel().status({ nodeId, status: "error" }));
@@ -62,9 +73,36 @@ export const anthropicChatModelExecutor: NodeExecutor<AnthropicChatModelNodeData
         apiKey: decrypt(credential.value),
     });
 
+    // Track MCP cleanup function
+    let mcpCleanup: (() => Promise<void>) | null = null;
+
     try {
         // Get chat history with roles
         const chatHistory = (context._chatHistory as ChatMessageWithRole[]) || [];
+
+        // Get MCP tools config if available from AI Agent
+        const mcpToolsConfig = context._mcpToolsConfig as McpToolsNodeConfig | undefined;
+
+        // Create MCP tools if config provided
+        let mcpTools: Record<string, unknown> | undefined;
+        let mcpToolNames: string[] = [];
+
+        if (mcpToolsConfig && (mcpToolsConfig.serverUrl || mcpToolsConfig.command)) {
+            try {
+                const config: McpToolsConfig = {
+                    transportType: mcpToolsConfig.transportType || 'stdio',
+                    serverUrl: mcpToolsConfig.serverUrl,
+                    command: mcpToolsConfig.command,
+                    args: mcpToolsConfig.args,
+                };
+                const result = await createNativeMcpTools(config);
+                mcpTools = result.tools;
+                mcpToolNames = result.toolNames || [];
+                mcpCleanup = result.cleanup;
+            } catch (error) {
+                console.warn("Anthropic Chat Model: Failed to create MCP tools, continuing without:", error);
+            }
+        }
 
         // Build messages with proper roles from history
         const messages: CoreMessage[] = [
@@ -76,43 +114,91 @@ export const anthropicChatModelExecutor: NodeExecutor<AnthropicChatModelNodeData
             { role: 'user', content: userPrompt },
         ];
 
-        const result = await step.ai.wrap(
-            `anthropic-chat-model-generate-text-${nodeId}`,
-            generateText,
-            {
-                model: anthropic(data.model || "claude-sonnet-4-20250514"),
-                messages,
-                experimental_telemetry: {
-                    isEnabled: true,
-                    recordInputs: true,
-                    recordOutputs: true,
-                },
+        // Build generateText options
+        const generateTextOptions: Parameters<typeof generateText>[0] = {
+            model: anthropic(data.model || "claude-sonnet-4-20250514"),
+            messages,
+            experimental_telemetry: {
+                isEnabled: true,
+                recordInputs: true,
+                recordOutputs: true,
             },
-        );
+        };
 
-        const firstContent = (result?.steps?.[0]?.content?.[0] as any);
-        const text = firstContent?.text ?? '';
+        // Add tools if available
+        if (mcpTools && Object.keys(mcpTools).length > 0) {
+            (generateTextOptions as any).tools = mcpTools;
+            (generateTextOptions as any).maxSteps = 5;
+        }
 
-        await publish(
-            anthropicChatModelChannel().status({
-                nodeId,
-                status: "success",
-            }),
-        );
+        const result = await generateText(generateTextOptions);
+
+        let text = result?.text ?? '';
+
+        if (!text && result?.toolResults && result.toolResults.length > 0) {
+            const toolResultTexts = result.toolResults.map((tr: unknown) => {
+                const toolResult = tr as Record<string, unknown>;
+                const res = toolResult.result ?? toolResult.output ?? toolResult.content ?? toolResult;
+                if (typeof res === 'string') return res;
+                if (res && typeof res === 'object') {
+                    if ('content' in res) {
+                        const content = (res as { content: Array<{ text?: string }> }).content;
+                        if (Array.isArray(content)) {
+                            return content.map(c => c.text || '').join('\n');
+                        }
+                    }
+                    if ('text' in res) {
+                        return (res as { text: string }).text;
+                    }
+                }
+                return JSON.stringify(res);
+            }).join('\n');
+            text = toolResultTexts || text;
+        }
+
+        // Cleanup MCP client after generateText completes
+        if (mcpCleanup) {
+            try {
+                await mcpCleanup();
+            } catch (e) {
+                console.warn("Anthropic Chat Model: Failed to cleanup MCP client after success:", e);
+            }
+        }
+        // Use unique step ID for publish
+        await step.run(`publish-anthropic-success-${nodeId}`, async () => {
+            await publish(
+                anthropicChatModelChannel().status({
+                    nodeId,
+                    status: "success",
+                }),
+            );
+        });
 
         return {
             ...context,
             _chatModelResponse: text,
+            _mcpToolNames: mcpToolNames.length > 0 ? mcpToolNames : undefined,
             _chatHistory: undefined,
         };
 
     } catch (error) {
-        await publish(
-            anthropicChatModelChannel().status({
-                nodeId,
-                status: "error",
-            }),
-        );
+        // Cleanup MCP client on error
+        if (mcpCleanup) {
+            try {
+                await mcpCleanup();
+            } catch (e) {
+                console.warn("Anthropic Chat Model: Failed to cleanup MCP client:", e);
+            }
+        }
+
+        await step.run(`publish-anthropic-error-${nodeId}`, async () => {
+            await publish(
+                anthropicChatModelChannel().status({
+                    nodeId,
+                    status: "error",
+                }),
+            );
+        });
 
         throw new NonRetriableError("Anthropic Chat Model Node: Anthropic execution failed", {
             cause: error,

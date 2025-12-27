@@ -89,12 +89,17 @@ async function saveChatMessage(
  * 2. Save a message (when context._mongodbOperation === 'save')
  */
 export const mongodbExecutor: NodeExecutor<MongoDBNodeData> = async ({ data, nodeId, userId, context, step, publish }) => {
-    await publish(
-        mongodbChannel().status({
-            nodeId,
-            status: "loading",
-        }),
-    );
+    const operation = context._mongodbOperation as string || 'query';
+    const messageRole = context._messageRole as 'user' | 'assistant' || 'assistant';
+
+    await step.run(`publish-mongodb-loading-${operation}-${messageRole}-${nodeId}`, async () => {
+        await publish(
+            mongodbChannel().status({
+                nodeId,
+                status: "loading",
+            }),
+        );
+    });
 
     if (!data.credentialId) {
         await publish(mongodbChannel().status({ nodeId, status: "error" }));
@@ -122,12 +127,9 @@ export const mongodbExecutor: NodeExecutor<MongoDBNodeData> = async ({ data, nod
 
     const workflowId = context._workflowId as string || '';
     const agentNodeId = context._agentNodeId as string || nodeId;
-    const operation = context._mongodbOperation as string || 'query';
     const messageToSave = context._messageToSave as string || '';
-    const messageRole = context._messageRole as 'user' | 'assistant' || 'assistant';
 
     try {
-        // Use unique step name based on operation and role to avoid Inngest memoization
         const stepName = `mongodb-${operation}-${messageRole}-${nodeId}`;
         const result = await step.run(stepName, async () => {
             const connectionString = decrypt(credential.value);
@@ -154,12 +156,14 @@ export const mongodbExecutor: NodeExecutor<MongoDBNodeData> = async ({ data, nod
             }
         });
 
-        await publish(
-            mongodbChannel().status({
-                nodeId,
-                status: "success",
-            }),
-        );
+        await step.run(`publish-mongodb-success-${operation}-${messageRole}-${nodeId}`, async () => {
+            await publish(
+                mongodbChannel().status({
+                    nodeId,
+                    status: "success",
+                }),
+            );
+        });
 
         return {
             ...context,
@@ -174,12 +178,14 @@ export const mongodbExecutor: NodeExecutor<MongoDBNodeData> = async ({ data, nod
         };
 
     } catch (error) {
-        await publish(
-            mongodbChannel().status({
-                nodeId,
-                status: "error",
-            }),
-        );
+        await step.run(`publish-mongodb-error-${operation}-${messageRole}-${nodeId}`, async () => {
+            await publish(
+                mongodbChannel().status({
+                    nodeId,
+                    status: "error",
+                }),
+            );
+        });
 
         throw new NonRetriableError("MongoDB Node: Operation failed", {
             cause: error,

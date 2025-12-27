@@ -63,8 +63,7 @@ export async function getAvailableGeminiModels(credentialId: string): Promise<st
         return (data.models ?? [])
             .filter(
                 (m: any) =>
-                m.supportedGenerationMethods?.includes("generateContent") &&
-                m.name?.startsWith("models/gemini-")
+                m.supportedGenerationMethods?.includes("generateContent")
             )
             .map((m: any) => m.name.replace("models/", ""))
             .sort();

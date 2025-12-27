@@ -24,25 +24,19 @@ import {
     SelectTrigger,
     SelectValue
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Globe, Terminal, Wifi } from "lucide-react";
 
 const formSchema = z.object({
-    variableName: z
-        .string()
-        .min(1, "Variable name is required")
-        .regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, { message: "Variable name must start with a letter or underscore and can only contain letters, numbers, and underscores" }),
-    transportType: z.enum(["sse", "stdio"]),
+    transportType: z.enum(["sse", "http", "stdio"]),
     serverUrl: z.string().optional(),
     command: z.string().optional(),
     args: z.string().optional(),
-    toolName: z.string().min(1, "Tool name is required"),
-    toolArguments: z.string().optional(),
 });
 
 export type McpToolsFormValues = z.infer<typeof formSchema>;
@@ -64,29 +58,22 @@ export const McpToolsDialog = ({
     const form = useForm<McpToolsFormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            variableName: defaultValues.variableName || '',
-            transportType: defaultValues.transportType || "sse",
+            transportType: defaultValues.transportType || "stdio",
             serverUrl: defaultValues.serverUrl || '',
             command: defaultValues.command || '',
             args: defaultValues.args || '',
-            toolName: defaultValues.toolName || '',
-            toolArguments: defaultValues.toolArguments || '{}',
         },
     });
 
-    const watchVariableName = form.watch("variableName") || "myMcpTool";
     const watchTransportType = form.watch("transportType");
 
     useEffect(() => {
         if (open) {
             form.reset({
-                variableName: defaultValues.variableName || "",
                 transportType: defaultValues.transportType || "sse",
                 serverUrl: defaultValues.serverUrl || "",
                 command: defaultValues.command || "",
                 args: defaultValues.args || "",
-                toolName: defaultValues.toolName || "",
-                toolArguments: defaultValues.toolArguments || "{}",
             });
         }
     }, [open, defaultValues, form]);
@@ -104,31 +91,12 @@ export const McpToolsDialog = ({
                         MCP Tools Configuration
                     </DialogTitle>
                     <DialogDescription>
-                        Configure the <strong>MCP server and tool</strong> for this node.
+                        Connect to an MCP server to make its tools available to the AI Agent.
+                        All tools from the server will be automatically discovered.
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 mt-4">
-                        <FormField 
-                            control={form.control}
-                            name="variableName"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Variable Name</FormLabel>
-                                    <FormControl>
-                                        <Input 
-                                            placeholder="myMcpTool" 
-                                            {...field} 
-                                        />
-                                    </FormControl>
-                                    <FormDescription>
-                                        Store result in: {`{{${watchVariableName}.toolResult}}`}
-                                    </FormDescription>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
                         <FormField 
                             control={form.control}
                             name="transportType"
@@ -145,19 +113,43 @@ export const McpToolsDialog = ({
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            <SelectItem value="sse">SSE (Server-Sent Events)</SelectItem>
-                                            <SelectItem value="stdio">Stdio (Local Process)</SelectItem>
+                                            <SelectItem value="stdio">
+                                                <div className="flex items-center gap-2">
+                                                    <Terminal className="h-4 w-4" />
+                                                    <span>Stdio (Local Process)</span>
+                                                </div>
+                                            </SelectItem>
+                                            <SelectItem value="sse">
+                                                <div className="flex items-center gap-2">
+                                                    <Wifi className="h-4 w-4" />
+                                                    <span>SSE (Server-Sent Events)</span>
+                                                </div>
+                                            </SelectItem>
+                                            <SelectItem value="http">
+                                                <div className="flex items-center gap-2">
+                                                    <Globe className="h-4 w-4" />
+                                                    <span>HTTP (Remote Server)</span>
+                                                </div>
+                                            </SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <FormDescription>
-                                        How to connect to the MCP server.
+                                        {watchTransportType === "stdio" && (
+                                            <span>Spawns a local process. Best for local MCP servers or npm packages.</span>
+                                        )}
+                                        {watchTransportType === "sse" && (
+                                            <span>Connects via Server-Sent Events. Best for remote/online MCP servers.</span>
+                                        )}
+                                        {watchTransportType === "http" && (
+                                            <span>Connects via HTTP. Best for REST-based MCP servers.</span>
+                                        )}
                                     </FormDescription>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
 
-                        {watchTransportType === "sse" && (
+                        {(watchTransportType === "sse" || watchTransportType === "http") && (
                             <FormField 
                                 control={form.control}
                                 name="serverUrl"
@@ -166,12 +158,15 @@ export const McpToolsDialog = ({
                                         <FormLabel>Server URL</FormLabel>
                                         <FormControl>
                                             <Input 
-                                                placeholder="http://localhost:3001/sse" 
+                                                placeholder={watchTransportType === "sse" 
+                                                    ? "https://mcp.example.com/sse" 
+                                                    : "https://mcp.example.com/api"
+                                                }
                                                 {...field} 
                                             />
                                         </FormControl>
                                         <FormDescription>
-                                            URL of the MCP SSE endpoint.
+                                            Full URL to the MCP server endpoint.
                                         </FormDescription>
                                         <FormMessage />
                                     </FormItem>
@@ -194,7 +189,7 @@ export const McpToolsDialog = ({
                                                 />
                                             </FormControl>
                                             <FormDescription>
-                                                Command to start the MCP server.
+                                                The executable to run. Examples: <code className="bg-muted px-1 rounded">npx</code>, <code className="bg-muted px-1 rounded">node</code>, <code className="bg-muted px-1 rounded">python</code>
                                             </FormDescription>
                                             <FormMessage />
                                         </FormItem>
@@ -208,12 +203,12 @@ export const McpToolsDialog = ({
                                             <FormLabel>Arguments</FormLabel>
                                             <FormControl>
                                                 <Input 
-                                                    placeholder="-y @modelcontextprotocol/server-filesystem /path" 
+                                                    placeholder="-y @modelcontextprotocol/server-filesystem C:/allowed/path" 
                                                     {...field} 
                                                 />
                                             </FormControl>
                                             <FormDescription>
-                                                Space-separated command arguments.
+                                                Space-separated arguments. For npm packages use: <code className="bg-muted px-1 rounded">-y @package/name [args]</code>
                                             </FormDescription>
                                             <FormMessage />
                                         </FormItem>
@@ -221,47 +216,6 @@ export const McpToolsDialog = ({
                                 />
                             </>
                         )}
-
-                        <FormField 
-                            control={form.control}
-                            name="toolName"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Tool Name</FormLabel>
-                                    <FormControl>
-                                        <Input 
-                                            placeholder="read_file" 
-                                            {...field} 
-                                        />
-                                    </FormControl>
-                                    <FormDescription>
-                                        Name of the MCP tool to call.
-                                    </FormDescription>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        <FormField 
-                            control={form.control}
-                            name="toolArguments"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Tool Arguments</FormLabel>
-                                    <FormControl>
-                                        <Textarea 
-                                            placeholder='{ "path": "{{filePath}}" }'
-                                            {...field} 
-                                            className="min-h-[100px] font-mono text-sm"
-                                        />
-                                    </FormControl>
-                                    <FormDescription>
-                                        JSON arguments for the tool. Use {"{{variables}}"} for dynamic values.
-                                    </FormDescription>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
                         
                         <DialogFooter className="mt-4">
                             <Button type="submit">Save</Button>
