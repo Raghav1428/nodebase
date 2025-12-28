@@ -30,7 +30,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, message: "Stripe trigger webhook processed successfully" }, { status: 200 });
         
     } catch (error) {
-        console.error("Error in Stripe trigger webhook:", error);
         return NextResponse.json({ success: false, error: "Failed to process Stripe trigger" }, { status: 500 });
     }
 }

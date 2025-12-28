@@ -100,7 +100,7 @@ export const geminiChatModelExecutor: NodeExecutor<GeminiChatModelNodeData> = as
                 mcpToolNames = result.toolNames || [];
                 mcpCleanup = result.cleanup;
             } catch (error) {
-                console.warn("Gemini Chat Model: Failed to create MCP tools, continuing without:", error);
+                throw error;
             }
         }
 
@@ -163,7 +163,6 @@ export const geminiChatModelExecutor: NodeExecutor<GeminiChatModelNodeData> = as
             try {
                 await mcpCleanup();
             } catch (e) {
-                console.warn("Gemini Chat Model: Failed to cleanup MCP client after success:", e);
             }
         }
 
@@ -190,7 +189,6 @@ export const geminiChatModelExecutor: NodeExecutor<GeminiChatModelNodeData> = as
             try {
                 await mcpCleanup();
             } catch (e) {
-                console.warn("Gemini Chat Model: Failed to cleanup MCP client:", e);
             }
         }
 

@@ -26,8 +26,7 @@ export async function getAvailableOpenRouterModels(credentialId: string): Promis
   
   const session = await auth.api.getSession({ headers: await headers() });
     if(!session?.user?.id){
-        console.warn("OpenRouter models: user not found");
-        return ["gpt-4o-mini"]; // fallback
+      return ["gpt-4o-mini"]; // fallback
     }
 
     const credential = await prisma.credential.findFirst({
@@ -35,15 +34,13 @@ export async function getAvailableOpenRouterModels(credentialId: string): Promis
     });
 
     if (!credential) {
-        console.warn("OpenRouter models: credential not found");
-        return ["gpt-4o-mini"]; // fallback
+      return ["gpt-4o-mini"]; // fallback
     }
 
     const apiKey = credential.value;
 
     if (!apiKey) {
-        console.warn("OpenRouter models: credential has no value");
-        return ["gpt-4o-mini"];
+      return ["gpt-4o-mini"];
     }
 
   try {
@@ -67,7 +64,6 @@ export async function getAvailableOpenRouterModels(credentialId: string): Promis
         .sort()
     );
   } catch (error) {
-    console.error("Error fetching OpenRouter models:", error);
     return ["gpt-4o-mini"]; // Fallback on error
   }
 }

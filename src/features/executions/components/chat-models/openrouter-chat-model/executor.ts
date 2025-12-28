@@ -104,7 +104,7 @@ export const openRouterChatModelExecutor: NodeExecutor<OpenRouterChatModelNodeDa
                 mcpToolNames = result.toolNames || [];
                 mcpCleanup = result.cleanup;
             } catch (error) {
-                console.warn("OpenRouter Chat Model: Failed to create MCP tools, continuing without:", error);
+                throw error;
             }
         }
 
@@ -164,7 +164,6 @@ export const openRouterChatModelExecutor: NodeExecutor<OpenRouterChatModelNodeDa
             try {
                 await mcpCleanup();
             } catch (error) {
-                console.error("OpenRouter Chat Model: Failed to cleanup MCP client:", error);
             }
         }
 
@@ -190,7 +189,6 @@ export const openRouterChatModelExecutor: NodeExecutor<OpenRouterChatModelNodeDa
             try {
                 await mcpCleanup();
             } catch (e) {
-                console.warn("OpenRouter Chat Model: Failed to cleanup MCP client:", e);
             }
         }
 

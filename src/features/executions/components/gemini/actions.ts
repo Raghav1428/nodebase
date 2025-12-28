@@ -26,7 +26,6 @@ export async function getAvailableGeminiModels(credentialId: string): Promise<st
     
     const session = await auth.api.getSession({ headers: await headers() });
     if(!session?.user?.id){
-        console.warn("Gemini models: user not found");
         return ["gemini-2.0-flash"]; // fallback
     }
 
@@ -35,14 +34,12 @@ export async function getAvailableGeminiModels(credentialId: string): Promise<st
     });
 
     if (!credential) {
-        console.warn("Gemini models: credential not found");
         return ["gemini-2.0-flash"]; // fallback
     }
 
     const apiKey = credential.value;
 
     if (!apiKey) {
-        console.warn("Gemini models: credential has no value");
         return ["gemini-2.0-flash"];
     }
 
@@ -70,7 +67,6 @@ export async function getAvailableGeminiModels(credentialId: string): Promise<st
             .sort();
 
     } catch (error) {
-        console.error("Error fetching Gemini models:", error);
         return ["gemini-2.0-flash"];
     }
 }

@@ -100,7 +100,7 @@ export const anthropicChatModelExecutor: NodeExecutor<AnthropicChatModelNodeData
                 mcpToolNames = result.toolNames || [];
                 mcpCleanup = result.cleanup;
             } catch (error) {
-                console.warn("Anthropic Chat Model: Failed to create MCP tools, continuing without:", error);
+                throw error;
             }
         }
 
@@ -161,7 +161,7 @@ export const anthropicChatModelExecutor: NodeExecutor<AnthropicChatModelNodeData
             try {
                 await mcpCleanup();
             } catch (e) {
-                console.warn("Anthropic Chat Model: Failed to cleanup MCP client after success:", e);
+                throw e;
             }
         }
         // Use unique step ID for publish
@@ -187,7 +187,6 @@ export const anthropicChatModelExecutor: NodeExecutor<AnthropicChatModelNodeData
             try {
                 await mcpCleanup();
             } catch (e) {
-                console.warn("Anthropic Chat Model: Failed to cleanup MCP client:", e);
             }
         }
 

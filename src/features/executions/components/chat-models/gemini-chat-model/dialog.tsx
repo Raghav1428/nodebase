@@ -108,7 +108,6 @@ export const GeminiChatModelDialog = ({
                 form.setValue("model", fetchedModels[0]);
                 }
             } catch (err) {
-                console.error("Failed to load models", err);
                 setModels([]);
             } finally {
                 setIsLoadingModels(false);

@@ -26,8 +26,7 @@ export async function getAvailableOpenAIModels(credentialId: string): Promise<st
   
   const session = await auth.api.getSession({ headers: await headers() });
     if(!session?.user?.id){
-        console.warn("OpenAI models: user not found");
-        return ["gpt-4o-mini"]; // fallback
+      return ["gpt-4o-mini"]; // fallback
     }
 
     const credential = await prisma.credential.findFirst({
@@ -35,15 +34,13 @@ export async function getAvailableOpenAIModels(credentialId: string): Promise<st
     });
 
     if (!credential) {
-        console.warn("OpenAI models: credential not found");
-        return ["gpt-4o-mini"]; // fallback
+      return ["gpt-4o-mini"]; // fallback
     }
 
     const apiKey = credential.value;
 
     if (!apiKey) {
-        console.warn("OpenAI models: credential has no value");
-        return ["gpt-4o-mini"];
+      return ["gpt-4o-mini"];
     }
 
   try {
@@ -72,7 +69,6 @@ export async function getAvailableOpenAIModels(credentialId: string): Promise<st
         .sort()
     );
   } catch (error) {
-    console.error("Error fetching OpenAI models:", error);
     return ["gpt-4o-mini"]; // Fallback on error
   }
 }

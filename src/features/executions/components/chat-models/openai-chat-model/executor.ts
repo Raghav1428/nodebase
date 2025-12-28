@@ -100,7 +100,7 @@ export const openAIChatModelExecutor: NodeExecutor<OpenAIChatModelNodeData> = as
                 mcpToolNames = result.toolNames || [];
                 mcpCleanup = result.cleanup;
             } catch (error) {
-                console.warn("OpenAI Chat Model: Failed to create MCP tools, continuing without:", error);
+                throw error;
             }
         }
 
@@ -160,7 +160,6 @@ export const openAIChatModelExecutor: NodeExecutor<OpenAIChatModelNodeData> = as
             try {
                 await mcpCleanup();
             } catch (e) {
-                console.warn("OpenAI Chat Model: Failed to cleanup MCP client:", e);
             }
         }
 
@@ -186,7 +185,6 @@ export const openAIChatModelExecutor: NodeExecutor<OpenAIChatModelNodeData> = as
             try {
                 await mcpCleanup();
             } catch (e) {
-                console.warn("OpenAI Chat Model: Failed to cleanup MCP client:", e);
             }
         }
 

@@ -3,6 +3,7 @@ import prisma from "@/lib/db";
 import { sendWorkflowExecution } from "./utils";
 import { NodeType } from "@/generated/prisma";
 import { CronExpressionParser } from "cron-parser";
+import { NonRetriableError } from "inngest";
 
 /**
  * Scheduled workflow runner that checks every minute for workflows
@@ -76,7 +77,7 @@ export const scheduledWorkflowRunner = inngest.createFunction(
                         triggeredWorkflows.push(workflow.id);
                     }
                 } catch (err) {
-                    console.error(`Invalid cron expression for workflow ${workflow.id}:`, err);
+                    continue;
                 }
             }
         }

@@ -26,8 +26,7 @@ export async function getAvailableAnthropicModels(credentialId: string): Promise
   
   const session = await auth.api.getSession({ headers: await headers() });
     if(!session?.user?.id){
-        console.warn("Anthropic models: user not found");
-        return ["claude-sonnet-4-20250514"]; // fallback
+      return ["claude-sonnet-4-20250514"]; // fallback
     }
 
     const credential = await prisma.credential.findFirst({
@@ -35,15 +34,13 @@ export async function getAvailableAnthropicModels(credentialId: string): Promise
     });
 
     if (!credential) {
-        console.warn("Anthropic models: credential not found");
-        return ["claude-sonnet-4-20250514"]; // fallback
+      return ["claude-sonnet-4-20250514"]; // fallback
     }
 
     const apiKey = credential.value;
 
     if (!apiKey) {
-        console.warn("Anthropic models: credential has no value");
-        return ["claude-sonnet-4-20250514"];
+      return ["claude-sonnet-4-20250514"];
     }
 
   try {
@@ -70,7 +67,6 @@ export async function getAvailableAnthropicModels(credentialId: string): Promise
       .map((m: any) => m.id as string)
       .sort();
   } catch (error) {
-    console.error("Error fetching Anthropic models:", error);
     return ["claude-sonnet-4-20250514"];
   }
 }
