@@ -1,5 +1,7 @@
 import prisma from "@/lib/db";
 import { createTRPCRouter, premiumProcedure, protectedProcedure } from "@/trpc/init";
+import { TRPCError } from "@trpc/server";
+import { polarClient } from "@/lib/polar";
 import z from "zod";
 import { PAGINATION } from "@/config/constants";
 import { CredentialType } from "@/generated/prisma";
@@ -7,42 +9,65 @@ import { encrypt } from "@/lib/encryption";
 
 export const credentialsRouter = createTRPCRouter({
 
-    create: premiumProcedure
-    .input(
-        z.object({
-            name: z.string().min(1, "Name is Required"),
-            type: z.enum(CredentialType),
-            value: z.string().min(1, "API Key is Required"),
-        })
-    )
-    .mutation(({ ctx, input }) => {
+    create: protectedProcedure
+        .input(
+            z.object({
+                name: z.string().min(1, "Name is Required"),
+                type: z.enum(CredentialType),
+                value: z.string().min(1, "API Key is Required"),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const { name, type, value } = input;
+            const userId = ctx.auth.user.id;
+            let hasActiveSubscription = false;
+            try {
+                const customer = await polarClient.customers.getStateExternal({
+                    externalId: userId,
+                });
+                hasActiveSubscription = customer?.activeSubscriptions && customer.activeSubscriptions.length > 0;
+            } catch (error) {
+                // Assume free tier on error/not found
+            }
 
-        const { name, type, value } = input;
+            return prisma.$transaction(async (tx) => {
+                if (!hasActiveSubscription) {
+                    const credentialCount = await tx.credential.count({
+                        where: { userId },
+                    });
 
-        return prisma.credential.create({
-            data: {
-                name,
-                userId: ctx.auth.user.id,
-                type,
-                value: encrypt(value),
-            },
-        });
-    }),
+                    if (credentialCount >= 3) {
+                        throw new TRPCError({
+                            code: "FORBIDDEN",
+                            message: "Free plan limited to 3 credentials. Upgrade to create more.",
+                        });
+                    }
+                }
+
+                return tx.credential.create({
+                    data: {
+                        name,
+                        userId,
+                        type,
+                        value: encrypt(value),
+                    },
+                });
+            });
+        }),
 
     remove: protectedProcedure
         .input(z.object({ id: z.string() }))
-        .mutation(( { ctx, input }) => {
+        .mutation(({ ctx, input }) => {
             return prisma.credential.delete({
                 where: {
                     id: input.id,
                     userId: ctx.auth.user.id,
                 }
             });
-        }
-    ),
+        }),
 
     update: protectedProcedure
-        .input(z.object({ 
+        .input(z.object({
             id: z.string(),
             name: z.string().min(1, "Name is Required"),
             type: z.enum(CredentialType),
@@ -58,14 +83,13 @@ export const credentialsRouter = createTRPCRouter({
 
             return prisma.credential.update({
                 where: { id, userId: ctx.auth.user.id },
-                data: { 
+                data: {
                     name,
                     type,
                     value: encrypt(value),
                 },
             });
-        }
-    ),
+        }),
 
     getOne: protectedProcedure
         .input(z.object({ id: z.string() }))
@@ -76,25 +100,24 @@ export const credentialsRouter = createTRPCRouter({
                     userId: ctx.auth.user.id,
                 },
             });
-        }
-    ),
+        }),
 
     getMany: protectedProcedure
-    .input(
-        z.object({
-            page: z.number().default(PAGINATION.DEFAULT_PAGE),
-            pageSize: z.number().min(PAGINATION.MIN_PAGE_SIZE).max(PAGINATION.MAX_PAGE_SIZE).default(PAGINATION.DEFAULT_PAGE_SIZE),
-            search: z.string().default(""),
-        })
-    )
-        .query( async ({ ctx, input }) => {
+        .input(
+            z.object({
+                page: z.number().default(PAGINATION.DEFAULT_PAGE),
+                pageSize: z.number().min(PAGINATION.MIN_PAGE_SIZE).max(PAGINATION.MAX_PAGE_SIZE).default(PAGINATION.DEFAULT_PAGE_SIZE),
+                search: z.string().default(""),
+            })
+        )
+        .query(async ({ ctx, input }) => {
             const { page, pageSize, search } = input;
 
             const [items, totalCount] = await Promise.all([
                 prisma.credential.findMany({
-                    skip: (page-1) * pageSize,
+                    skip: (page - 1) * pageSize,
                     take: pageSize,
-                    where: { 
+                    where: {
                         userId: ctx.auth.user.id,
                         name: {
                             contains: search,
@@ -106,7 +129,7 @@ export const credentialsRouter = createTRPCRouter({
                     },
                 }),
                 prisma.credential.count({
-                    where: { 
+                    where: {
                         userId: ctx.auth.user.id,
                         name: {
                             contains: search,
@@ -116,7 +139,7 @@ export const credentialsRouter = createTRPCRouter({
                 }),
             ])
 
-            const totalPages = Math.ceil(totalCount/pageSize);
+            const totalPages = Math.ceil(totalCount / pageSize);
             const hasNextPage = page < totalPages;
             const hasPreviousPage = page > 1
 
@@ -129,8 +152,7 @@ export const credentialsRouter = createTRPCRouter({
                 hasNextPage,
                 hasPreviousPage
             };
-        },
-    ),
+        }),
 
     getByType: protectedProcedure
         .input(z.object({ type: z.enum(CredentialType) }))

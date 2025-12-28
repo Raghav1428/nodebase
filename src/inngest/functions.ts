@@ -25,6 +25,7 @@ import { geminiChatModelChannel } from "./channels/gemini-chat-model";
 import { anthropicChatModelChannel } from "./channels/anthropic-chat-model";
 import { openRouterChatModelChannel } from "./channels/openrouter-chat-model";
 import { openAIChatModelChannel } from "./channels/openai-chat-model";
+import { polarClient } from "@/lib/polar";
 
 export const executeWorkflow = inngest.createFunction(
   {
@@ -73,6 +74,45 @@ export const executeWorkflow = inngest.createFunction(
     const workflowId = event.data.workflowId;
 
     if (!inngestEventId || !workflowId) throw new NonRetriableError("Event ID or Workflow ID is missing");
+
+    await step.run("check-execution-limit", async () => {
+      const workflow = await prisma.workflow.findUnique({
+        where: { id: workflowId },
+        select: { userId: true }
+      });
+
+      if (!workflow) return;
+
+      let hasActiveSubscription = false;
+
+      try {
+        const customer = await polarClient.customers.getStateExternal({
+          externalId: workflow.userId,
+        });
+
+        hasActiveSubscription = customer?.activeSubscriptions && customer.activeSubscriptions.length > 0;
+      } catch (error) {
+        // If customer not found or other error, assume no subscription (free tier)
+      }
+
+      if (!hasActiveSubscription) {
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        const executionCount = await prisma.execution.count({
+          where: {
+            workflow: { userId: workflow.userId },
+            startedAt: {
+              gte: firstDayOfMonth,
+            }
+          }
+        });
+
+        if (executionCount > 100) {
+          throw new NonRetriableError("Monthly execution limit reached. Upgrade to Pro for unlimited executions.");
+        }
+      }
+    });
 
     await step.run("create-execution", async () => {
       await prisma.execution.create({
