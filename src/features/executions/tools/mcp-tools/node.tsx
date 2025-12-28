@@ -15,11 +15,9 @@ import { BaseHandle } from "@/components/react-flow/base-handle";
 type McpToolsNodeData = {
     variableName?: string;
     serverUrl?: string;
-    transportType?: "sse" | "stdio";
+    transportType?: "sse" | "http" | "stdio";
     command?: string;
     args?: string;
-    toolName?: string;
-    toolArguments?: string;
 }
 
 type McpToolsNodeType = Node<McpToolsNodeData>
@@ -59,7 +57,21 @@ export const McpToolsNode = memo((props: NodeProps<McpToolsNodeType>) => {
     }
     
     const nodeData = props.data;
-    const description = nodeData?.toolName ? `Tool: ${nodeData.toolName}` : "Not configured";
+    
+    // Determine if properly configured based on transport type
+    const isConfigured = nodeData?.transportType === "stdio" 
+        ? !!nodeData?.command 
+        : !!nodeData?.serverUrl;
+    
+    const getDescription = () => {
+        if (!isConfigured) return "Not configured";
+        if (nodeData?.transportType === "stdio") {
+            return `${nodeData.command} ${nodeData.args || ""}`.trim();
+        }
+        return nodeData?.serverUrl || "Configured";
+    };
+    
+    const description = getDescription();
     
     return (
         <>
