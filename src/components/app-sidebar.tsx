@@ -22,10 +22,14 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-    SidebarMenuSubItem
+    SidebarMenuSubItem,
+    useSidebar,
 } from "@/components/ui/sidebar";
 import { authClient } from "@/lib/auth-client";
 import { useHasActiveSubscription } from "@/features/subscriptions/hooks/use-subscription";
+import { useExecutionUsage } from "@/features/executions/hooks/use-executions";
+import { Progress } from "@/components/ui/progress";
+import { CircularProgress } from "@/components/ui/circular-progress";
 
 const menuItems = [
     {
@@ -55,6 +59,13 @@ export const AppSideBar = () => {
     const router = useRouter();
     const pathname = usePathname();
     const { hasActiveSubscription, isLoading } = useHasActiveSubscription();
+    const usageQuery = useExecutionUsage();
+    const { state } = useSidebar();
+    
+    const usedCount = usageQuery.data?.count || 0;
+    const limit = 100;
+    const remainingCount = Math.max(0, limit - usedCount);
+    const remainingPercentage = Math.min(100, (remainingCount / limit) * 100);
 
     return (
         <Sidebar collapsible="icon">
@@ -99,6 +110,25 @@ export const AppSideBar = () => {
             </SidebarContent>
             <SidebarFooter>
                 <SidebarMenu>
+                    {!hasActiveSubscription && !isLoading && (
+                        <SidebarMenuItem>
+                            {state === "collapsed" ? (
+                                <div className="flex justify-center py-2" title={`${remainingCount} executions remaining`}>
+                                     <CircularProgress value={remainingPercentage} size={20} className="text-muted-foreground" />
+                                </div>
+                            ) : (
+                                <div className="px-4 py-2">
+                                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                                        <span>Executions Remaining</span>
+                                        <span>{hasActiveSubscription ? "Unlimited" : `${remainingCount} / ${limit}`}</span>
+                                    </div>
+                                    {!hasActiveSubscription && (
+                                        <Progress value={remainingPercentage} className="h-2" />
+                                    )}
+                                </div>
+                            )}
+                        </SidebarMenuItem>
+                    )}
                     {!hasActiveSubscription && !isLoading && (
                         <SidebarMenuItem>
                             <SidebarMenuButton

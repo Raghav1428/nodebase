@@ -1,6 +1,8 @@
 import { generateSlug } from "random-word-slugs"
 import prisma from "@/lib/db";
 import { createTRPCRouter, premiumProcedure, protectedProcedure } from "@/trpc/init";
+import { TRPCError } from "@trpc/server";
+import { polarClient } from "@/lib/polar";
 import z from "zod";
 import { PAGINATION } from "@/config/constants";
 import { NodeType } from "@/generated/prisma";
@@ -23,21 +25,49 @@ export const workflowsRouter = createTRPCRouter({
             });
             return workflow
         }
-    ),
+        ),
 
-    create: premiumProcedure.mutation(({ ctx }) => {
-        return prisma.workflow.create({
-            data: {
-                name: generateSlug(3),
-                userId: ctx.auth.user.id,
-                nodes: {
-                    create:{
-                        type: NodeType.INITIAL,
-                        position: { x: 0, y: 0 },
-                        name: NodeType.INITIAL,
+    create: protectedProcedure.mutation(async ({ ctx }) => {
+        const userId = ctx.auth.user.id;
+
+        return prisma.$transaction(async (tx) => {
+            let hasActiveSubscription = false;
+
+            try {
+                const customer = await polarClient.customers.getStateExternal({
+                    externalId: userId,
+                });
+                hasActiveSubscription = customer?.activeSubscriptions && customer.activeSubscriptions.length > 0;
+            } catch (error) {
+                // If customer not found or other error, assume no subscription (free tier)
+            }
+
+            if (!hasActiveSubscription) {
+                const workflowCount = await tx.workflow.count({
+                    where: { userId },
+                });
+
+                if (workflowCount >= 3) {
+                    throw new TRPCError({
+                        code: "FORBIDDEN",
+                        message: "Free plan limited to 3 workflows. Upgrade to create more.",
+                    });
+                }
+            }
+
+            return tx.workflow.create({
+                data: {
+                    name: generateSlug(3),
+                    userId,
+                    nodes: {
+                        create: {
+                            type: NodeType.INITIAL,
+                            position: { x: 0, y: 0 },
+                            name: NodeType.INITIAL,
+                        },
                     },
                 },
-            },
+            });
         });
     }),
 
@@ -51,7 +81,7 @@ export const workflowsRouter = createTRPCRouter({
                 }
             });
         }
-    ),
+        ),
 
     updateName: protectedProcedure
         .input(z.object({ id: z.string(), name: z.string().min(1) }))
@@ -66,7 +96,7 @@ export const workflowsRouter = createTRPCRouter({
                 }
             });
         }
-    ),
+        ),
 
     update: protectedProcedure
         .input(z.object({
@@ -140,7 +170,7 @@ export const workflowsRouter = createTRPCRouter({
                 return workflow;
             })
         }
-    ),
+        ),
 
     getOne: protectedProcedure
         .input(z.object({ id: z.string() }))
@@ -176,7 +206,7 @@ export const workflowsRouter = createTRPCRouter({
                 edges,
             }
         }
-    ),
+        ),
 
     getMany: protectedProcedure
         .input(
@@ -229,5 +259,5 @@ export const workflowsRouter = createTRPCRouter({
                 hasPreviousPage
             };
         },
-    ),
+        ),
 });

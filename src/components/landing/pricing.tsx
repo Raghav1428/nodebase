@@ -16,7 +16,7 @@ const tiers = [
     features: [
       "Access to basic features",
       "Community support",
-      "3 projects",
+      "3 workflows",
       "3 Credentials",
       "100 executions per month",
     ],
@@ -30,7 +30,7 @@ const tiers = [
     features: [
       "Early access to new features",
       "Priority support",
-      "Unlimited projects",
+      "Unlimited workflows",
       "Unlimited Credentials",
       "Unlimited executions per month",
     ],

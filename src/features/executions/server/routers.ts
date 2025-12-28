@@ -15,7 +15,7 @@ export const executionsRouter = createTRPCRouter({
                         userId: ctx.auth.user.id,
                     },
                 },
-                include:{
+                include: {
                     workflow: {
                         select: {
                             id: true,
@@ -25,23 +25,23 @@ export const executionsRouter = createTRPCRouter({
                 }
             });
         }
-    ),
+        ),
 
     getMany: protectedProcedure
-    .input(
-        z.object({
-            page: z.number().default(PAGINATION.DEFAULT_PAGE),
-            pageSize: z.number().min(PAGINATION.MIN_PAGE_SIZE).max(PAGINATION.MAX_PAGE_SIZE).default(PAGINATION.DEFAULT_PAGE_SIZE),
-        })
-    )
-        .query( async ({ ctx, input }) => {
+        .input(
+            z.object({
+                page: z.number().default(PAGINATION.DEFAULT_PAGE),
+                pageSize: z.number().min(PAGINATION.MIN_PAGE_SIZE).max(PAGINATION.MAX_PAGE_SIZE).default(PAGINATION.DEFAULT_PAGE_SIZE),
+            })
+        )
+        .query(async ({ ctx, input }) => {
             const { page, pageSize } = input;
 
             const [items, totalCount] = await Promise.all([
                 prisma.execution.findMany({
-                    skip: (page-1) * pageSize,
+                    skip: (page - 1) * pageSize,
                     take: pageSize,
-                    where: { 
+                    where: {
                         workflow: {
                             userId: ctx.auth.user.id,
                         },
@@ -50,7 +50,7 @@ export const executionsRouter = createTRPCRouter({
                         startedAt: "desc"
                     },
                     include: {
-                        workflow:{
+                        workflow: {
                             select: {
                                 id: true,
                                 name: true,
@@ -59,7 +59,7 @@ export const executionsRouter = createTRPCRouter({
                     },
                 }),
                 prisma.execution.count({
-                    where: { 
+                    where: {
                         workflow: {
                             userId: ctx.auth.user.id,
                         },
@@ -67,7 +67,7 @@ export const executionsRouter = createTRPCRouter({
                 }),
             ])
 
-            const totalPages = Math.ceil(totalCount/pageSize);
+            const totalPages = Math.ceil(totalCount / pageSize);
             const hasNextPage = page < totalPages;
             const hasPreviousPage = page > 1
 
@@ -81,6 +81,25 @@ export const executionsRouter = createTRPCRouter({
                 hasPreviousPage
             };
         },
-    ),
+        ),
+
+    getMonthlyUsage: protectedProcedure
+        .query(async ({ ctx }) => {
+            const now = new Date();
+            const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+            const count = await prisma.execution.count({
+                where: {
+                    workflow: {
+                        userId: ctx.auth.user.id,
+                    },
+                    startedAt: {
+                        gte: firstDayOfMonth,
+                    },
+                },
+            });
+
+            return { count };
+        }),
 
 });
