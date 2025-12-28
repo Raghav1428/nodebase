@@ -120,7 +120,7 @@ export const AppSideBar = () => {
                                 <div className="px-4 py-2">
                                     <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
                                         <span>Executions Remaining</span>
-                                        <span>{hasActiveSubscription ? "Unlimited" : `${remainingCount} / ${limit}`}</span>
+                                        <span>{`${remainingCount} / ${limit}`}</span>
                                     </div>
                                     {!hasActiveSubscription && (
                                         <Progress value={remainingPercentage} className="h-2" />
