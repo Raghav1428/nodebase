@@ -3,11 +3,13 @@
  * 
  * This helper uses the raw @modelcontextprotocol/sdk to get full tool definitions
  * including inputSchema, then builds proper AI SDK tools with Zod parameters.
+ * Supports both stdio and SSE/HTTP transports.
  */
 
 import { z, ZodTypeAny } from 'zod';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { parseArgs } from './parse-args';
 
 // Export the McpToolsConfig type for consumers
@@ -117,58 +119,90 @@ function inputSchemaToZodObject(inputSchema: unknown): z.ZodObject<Record<string
 }
 
 /**
+ * Builds AI SDK tools from MCP tool definitions.
+ * Shared helper for both stdio and SSE transports.
+ */
+function buildToolsFromMcpList(
+    listResult: { tools: Array<{ name: string; description?: string; inputSchema?: unknown }> },
+    client: Client
+): { nativeTools: Record<string, unknown>; toolNames: string[] } {
+    const toolNames = listResult.tools.map(t => t.name);
+    const nativeTools: Record<string, unknown> = {};
+
+    for (const tool of listResult.tools) {
+        const zodParameters = inputSchemaToZodObject(tool.inputSchema);
+
+        nativeTools[tool.name] = {
+            description: tool.description || `MCP tool: ${tool.name}`,
+            inputSchema: zodParameters,
+            execute: async (toolArgs: Record<string, unknown>) => {
+                const result = await client.callTool({
+                    name: tool.name,
+                    arguments: toolArgs,
+                });
+
+                // Extract text content from MCP result format
+                if (result.content && Array.isArray(result.content)) {
+                    const textContent = result.content
+                        .filter((c: { type: string }) => c.type === 'text')
+                        .map((c: { type: string; text?: string }) => c.text || '')
+                        .join('\n');
+                    return textContent || JSON.stringify(result);
+                }
+
+                return JSON.stringify(result);
+            },
+        };
+    }
+
+    return { nativeTools, toolNames };
+}
+
+/**
  * Creates native AI SDK tools from an MCP server.
  * 
  * Uses the raw @modelcontextprotocol/sdk Client to:
- * 1. Connect to the MCP server
+ * 1. Connect to the MCP server via stdio or SSE
  * 2. List tools with full inputSchema
  * 3. Build proper AI SDK tools with Zod parameters and execute functions
  */
 export async function createNativeMcpTools(config: McpToolsConfig): Promise<NativeMcpToolsResult> {
     const { transportType, serverUrl, command, args } = config;
 
-    if (transportType === 'stdio' && command) {
-        const argsArray = parseArgs(args);
-        const transport = new StdioClientTransport({ command, args: argsArray });
-
-        const client = new Client({
-            name: 'nodebase-mcp-client',
-            version: '1.0.0',
-        });
-
-        await client.connect(transport);
-
+    // Validate configuration BEFORE creating client to avoid resource leaks
+    if (transportType === 'stdio') {
+        if (!command) {
+            throw new Error(`Invalid MCP transport configuration: stdio transport requires 'command'.`);
+        }
+    } else if (transportType === 'sse' || transportType === 'http') {
+        if (!serverUrl) {
+            throw new Error(`Invalid MCP transport configuration: ${transportType} transport requires 'serverUrl'.`);
+        }
+        // Validate URL parsing before creating client
         try {
+            new URL(serverUrl);
+        } catch (urlError) {
+            throw new Error(`Invalid MCP server URL: ${serverUrl}. ${urlError instanceof Error ? urlError.message : String(urlError)}`);
+        }
+    } else {
+        throw new Error(`Invalid MCP transport type: ${transportType}. Supported types: 'stdio', 'sse', 'http'.`);
+    }
+
+    // Create MCP client after validation passes
+    const client = new Client({
+        name: 'nodebase-mcp-client',
+        version: '1.0.0',
+    });
+
+    try {
+        if (transportType === 'stdio') {
+            const argsArray = parseArgs(args);
+            const transport = new StdioClientTransport({ command: command!, args: argsArray });
+
+            await client.connect(transport);
+
             const listResult = await client.listTools();
-            const toolNames = listResult.tools.map(t => t.name);
-
-            const nativeTools: Record<string, unknown> = {};
-
-            for (const tool of listResult.tools) {
-                const zodParameters = inputSchemaToZodObject(tool.inputSchema);
-
-                nativeTools[tool.name] = {
-                    description: tool.description || `MCP tool: ${tool.name}`,
-                    inputSchema: zodParameters,
-                    execute: async (toolArgs: Record<string, unknown>) => {
-                        const result = await client.callTool({
-                            name: tool.name,
-                            arguments: toolArgs,
-                        });
-
-                        // Extract text content from MCP result format
-                        if (result.content && Array.isArray(result.content)) {
-                            const textContent = result.content
-                                .filter((c: { type: string }) => c.type === 'text')
-                                .map((c: { type: string; text?: string }) => c.text || '')
-                                .join('\n');
-                            return textContent || JSON.stringify(result);
-                        }
-
-                        return JSON.stringify(result);
-                    },
-                };
-            }
+            const { nativeTools, toolNames } = buildToolsFromMcpList(listResult, client);
 
             return {
                 tools: nativeTools,
@@ -178,13 +212,31 @@ export async function createNativeMcpTools(config: McpToolsConfig): Promise<Nati
                     await client.close();
                 },
             };
-        } catch (error) {
-            await client.close();
-            throw error;
+        } else {
+            // SSE or HTTP transport
+            const transport = new SSEClientTransport(new URL(serverUrl!));
+
+            await client.connect(transport);
+
+            const listResult = await client.listTools();
+            const { nativeTools, toolNames } = buildToolsFromMcpList(listResult, client);
+
+            return {
+                tools: nativeTools,
+                toolCount: toolNames.length,
+                toolNames: toolNames,
+                cleanup: async () => {
+                    await client.close();
+                },
+            };
         }
-    } else if ((transportType === 'sse' || transportType === 'http') && serverUrl) {
-        throw new Error(`SSE/HTTP transport not yet implemented for native MCP tools. Use stdio transport instead.`);
-    } else {
-        throw new Error(`Invalid MCP transport configuration: ${transportType}`);
+    } catch (error) {
+        // Ensure client is closed on any error during connection or tool listing
+        try {
+            await client.close();
+        } catch {
+            // Ignore close errors during cleanup
+        }
+        throw error;
     }
 }
