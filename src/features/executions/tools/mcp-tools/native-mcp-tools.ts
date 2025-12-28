@@ -3,8 +3,7 @@
  * 
  * This helper uses the raw @modelcontextprotocol/sdk to get full tool definitions
  * including inputSchema, then builds proper AI SDK tools with Zod parameters.
- * 
- * Supports both stdio and SSE transports.
+ * Supports both stdio and SSE/HTTP transports.
  */
 
 import { z, ZodTypeAny } from 'zod';
