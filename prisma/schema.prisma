@@ -109,8 +109,12 @@ model Workflow {
   connections Connection[]
   executions  Execution[]
 
+  nextRunAt DateTime?
+
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([nextRunAt])
 }
 
 enum NodeType {

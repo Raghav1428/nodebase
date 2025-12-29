@@ -1,4 +1,5 @@
 import { generateSlug } from "random-word-slugs"
+import { CronExpressionParser } from "cron-parser";
 import prisma from "@/lib/db";
 import { createTRPCRouter, premiumProcedure, protectedProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
@@ -119,12 +120,29 @@ export const workflowsRouter = createTRPCRouter({
             )
         }))
         .mutation(async ({ ctx, input }) => {
-
             const { id, nodes, edges } = input;
+            const now = new Date();
 
             const workflow = await prisma.workflow.findUniqueOrThrow({
                 where: { id, userId: ctx.auth.user.id },
             });
+
+            // Calculate nextRunAt if there is a scheduled trigger
+            let nextRunAt = null;
+            const scheduledNode = nodes.find(n => n.type === NodeType.SCHEDULED_TRIGGER);
+
+            if (scheduledNode && scheduledNode.data?.cronExpression) {
+                try {
+                    // @ts-ignore
+                    const interval = CronExpressionParser.parse(scheduledNode.data.cronExpression, {
+                        currentDate: now,
+                    });
+                    nextRunAt = interval.next().toDate();
+                } catch (error) {
+                    console.error("Failed to parse cron expression on save:", error);
+                    // If invalid, we just don't schedule it (or could throw error)
+                }
+            }
 
             //Transaction to ensure consistency
             return prisma.$transaction(async (tx) => {
@@ -164,7 +182,10 @@ export const workflowsRouter = createTRPCRouter({
 
                 await tx.workflow.update({
                     where: { id },
-                    data: { updatedAt: new Date() },
+                    data: {
+                        updatedAt: new Date(),
+                        nextRunAt,
+                    },
                 });
 
                 return workflow;

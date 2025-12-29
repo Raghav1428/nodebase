@@ -30,9 +30,8 @@ import { polarClient } from "@/lib/polar";
 export const executeWorkflow = inngest.createFunction(
   {
     id: "execute-workflow",
-    retries: 0,
     onFailure: async ({ event, step }) => {
-      return prisma.execution.update({
+      return prisma.execution.updateMany({
         where: { inngestEventId: event.data.event.id },
         data: {
           status: ExecutionStatus.FAILED,
@@ -115,8 +114,10 @@ export const executeWorkflow = inngest.createFunction(
     });
 
     await step.run("create-execution", async () => {
-      await prisma.execution.create({
-        data: {
+      await prisma.execution.upsert({
+        where: { inngestEventId },
+        update: {},
+        create: {
           workflowId,
           inngestEventId,
         },
@@ -188,14 +189,24 @@ export const executeWorkflow = inngest.createFunction(
       }
 
       const executor = getExecutor(node.type as NodeType);
-      context = await executor({
+
+      const executePromise = executor({
         data: node.data as Record<string, unknown>,
         nodeId: node.id,
         userId,
         context,
         step,
         publish
-      })
+      });
+
+      // timeout after 60 seconds
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Timeout: Execution took longer than 60 seconds"));
+        }, 60000);
+      });
+
+      context = await Promise.race([executePromise, timeoutPromise]);
     }
 
     await step.run("update-execution", async () => {

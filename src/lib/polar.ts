@@ -4,3 +4,22 @@ export const polarClient = new Polar({
     accessToken: process.env.POLAR_ACCESS_TOKEN!,
     server: 'sandbox', //TODO: change to "production" for production use
 });
+
+const originalGetStateExternal = polarClient.customers.getStateExternal.bind(polarClient.customers);
+
+polarClient.customers.getStateExternal = async (...args) => {
+    try {
+        return await originalGetStateExternal(...args);
+    } catch (error: any) {
+        const errorString = JSON.stringify(error);
+        if (
+            errorString.includes("ResourceNotFound") ||
+            error?.message?.includes("Not found") ||
+            error?.error === "ResourceNotFound"
+        ) {
+            // Return a safe default: no active subscriptions
+            return { activeSubscriptions: [] } as any;
+        }
+        throw error;
+    }
+};

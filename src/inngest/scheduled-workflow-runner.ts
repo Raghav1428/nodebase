@@ -3,79 +3,89 @@ import prisma from "@/lib/db";
 import { sendWorkflowExecution } from "./utils";
 import { NodeType } from "@/generated/prisma";
 import { CronExpressionParser } from "cron-parser";
-import { NonRetriableError } from "inngest";
 
 /**
  * Scheduled workflow runner that checks every minute for workflows
  * that should be triggered based on their cron expressions.
  */
 export const scheduledWorkflowRunner = inngest.createFunction(
-    { id: "scheduled-workflow-runner" },
+    { id: "scheduled-workflow-runner", concurrency: 1 },
     { cron: "* * * * *" }, // Runs every minute
     async ({ step }) => {
-        // Find all workflows with SCHEDULED_TRIGGER nodes
-        const scheduledWorkflows = await step.run("find-scheduled-workflows", async () => {
+        const now = new Date();
+
+        // 1. Find workflows due to run
+        const dueWorkflows = await step.run("find-due-workflows", async () => {
             return prisma.workflow.findMany({
                 where: {
-                    nodes: {
-                        some: {
-                            type: NodeType.SCHEDULED_TRIGGER,
-                        },
+                    nextRunAt: {
+                        lte: now
                     },
+                    nodes: { some: { type: NodeType.SCHEDULED_TRIGGER } }
                 },
                 include: {
-                    nodes: {
-                        where: {
-                            type: NodeType.SCHEDULED_TRIGGER,
-                        },
-                    },
-                },
+                    nodes: { where: { type: NodeType.SCHEDULED_TRIGGER } }
+                }
             });
         });
 
-        const now = new Date();
-        const currentMinute = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate(),
-            now.getHours(),
-            now.getMinutes()
-        );
+        if (dueWorkflows.length === 0) {
+            return { checked: 0, triggered: 0, triggeredWorkflows: [] };
+        }
 
         const triggeredWorkflows: string[] = [];
 
-        for (const workflow of scheduledWorkflows) {
+        for (const workflow of dueWorkflows) {
             for (const node of workflow.nodes) {
                 const data = node.data as { cronExpression?: string };
-                if (!data.cronExpression) continue;
+                if (!data.cronExpression) {
+                    console.warn(`Workflow ${workflow.id} has scheduled node ${node.id} without cronExpression`);
+                    continue;
+                }
 
                 try {
                     const interval = CronExpressionParser.parse(data.cronExpression, {
                         currentDate: now,
                     });
+                    const nextRun = interval.next().toDate();
 
-                    // Get the previous scheduled time
-                    const prev = interval.prev().toDate();
+                    // 2. ATOMIC LOCK & UPDATE
+                    console.log(`[scheduler] attempting lock for ${workflow.id}. CurNextRunAt: ${String(workflow.nextRunAt)} Now: ${now.toISOString()}`);
 
-                    // Check if the previous scheduled time is within the current minute window
-                    const minuteStart = currentMinute.getTime();
-                    const minuteEnd = minuteStart + 60000;
-
-                    if (prev.getTime() >= minuteStart && prev.getTime() < minuteEnd) {
-                        await step.run(`trigger-workflow-${workflow.id}-${node.id}`, async () => {
-                            await sendWorkflowExecution({
-                                workflowId: workflow.id,
-                                initialData: {
-                                    scheduled: {
-                                        timestamp: now.toISOString(),
-                                        cronExpression: data.cronExpression,
-                                        nodeId: node.id,
-                                    },
-                                },
-                            });
+                    const updateResult = await step.run(`lock-workflow-${workflow.id}`, async () => {
+                        return prisma.workflow.updateMany({
+                            where: {
+                                id: workflow.id,
+                                nextRunAt: { lte: now } // Robust lock: update if it is still considered "due"
+                            },
+                            data: { nextRunAt: nextRun }
                         });
-                        triggeredWorkflows.push(workflow.id);
+                    });
+
+                    if (updateResult.count === 0) {
+                        continue;
                     }
+
+                    // 3. Trigger idempotently
+                    await step.run(`trigger-workflow-${workflow.id}`, async () => {
+                        const executionId = `scheduled:${workflow.id}:${node.id}:${now.toISOString()}`;
+
+                        await sendWorkflowExecution({
+                            workflowId: workflow.id,
+                            id: executionId, // Idempotency key
+                            initialData: {
+                                scheduled: {
+                                    timestamp: now.toISOString(),
+                                    cronExpression: data.cronExpression,
+                                    nodeId: node.id,
+                                },
+                            },
+                        });
+                    });
+
+                    triggeredWorkflows.push(workflow.id);
+                    break;
+
                 } catch (err) {
                     continue;
                 }
@@ -83,7 +93,7 @@ export const scheduledWorkflowRunner = inngest.createFunction(
         }
 
         return {
-            checked: scheduledWorkflows.length,
+            checked: dueWorkflows.length,
             triggered: triggeredWorkflows.length,
             triggeredWorkflows,
         };
