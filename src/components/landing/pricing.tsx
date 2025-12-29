@@ -25,7 +25,7 @@ const tiers = [
   },
   {
     name: "Pro",
-    price: "$1.49",
+    price: "$0.99",
     description: "For professionals who need more power.",
     features: [
       "Early access to new features",
