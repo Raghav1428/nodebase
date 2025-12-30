@@ -1,11 +1,11 @@
 <div align="center">
-  <a href="https://nodebase.vercel.app">
+  <a href="https://nodebase.raghavseth.in/">
     <img src="public/logos/logo.svg" alt="Nodebase Logo" width="120" height="120">
   </a>
   
   # Nodebase - AI-Powered Workflow Automation
 
-  [![Website](https://img.shields.io/badge/Website-Visit%20App-blue?style=for-the-badge&logo=vercel)](https://nodebase.vercel.app)
+  [![Website](https://img.shields.io/badge/Website-Visit%20App-blue?style=for-the-badge&logo=vercel)](https://nodebase.raghavseth.in/)
 </div>
 
 Nodebase is a powerful, low-code workflow automation platform designed to integrate seamlessly with AI models and various developer tools. It allows users to create complex automation flows using a node-based visual editor, connecting triggers, actions, AI agents, and third-party services.
