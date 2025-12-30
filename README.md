@@ -164,6 +164,7 @@ The Inngest dashboard will be available at `http://localhost:8288`.
 │   ├── components/         # Reusable UI components
 │   ├── features/           # Feature-based modules
 │   │   ├── auth/           # Authentication logic
+│   │   ├── credentials/    # Credentials management
 │   │   ├── editor/         # Workflow editor components
 │   │   ├── executions/     # Workflow execution logic
 │   │   ├── triggers/       # Trigger definitions (Webhook, Schedule, etc.)
@@ -183,3 +184,5 @@ The Inngest dashboard will be available at `http://localhost:8288`.
 - `npm run format`: Formats code using Biome.
 - `npm run ngrok:dev`: Exposes local server via Ngrok for webhook testing.
  
+## 👤 Developer
+[Raghav Seth](https://raghavseth.in)
