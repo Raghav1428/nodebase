@@ -101,8 +101,7 @@ export const EmailDialog = ({
                 body: defaultValues.body || '',
             });
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [open, defaultValues]);
+    }, [open, defaultValues, allCredentials]);
 
     const handleSubmit = (values: EmailFormValues) => {
         onSubmit(values);

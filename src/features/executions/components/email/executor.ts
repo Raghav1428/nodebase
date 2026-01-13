@@ -90,14 +90,30 @@ export const emailExecutor: NodeExecutor<EmailData> = async ({ data, nodeId, use
     }
 
     // Compile templates with Handlebars
-    const rawTo = Handlebars.compile(data.to)(context);
-    const to = decode(rawTo);
+    let to: string;
+    let subject: string;
+    let body: string;
 
-    const rawSubject = Handlebars.compile(data.subject)(context);
-    const subject = decode(rawSubject);
+    try {
+        const rawTo = Handlebars.compile(data.to)(context);
+        to = decode(rawTo);
 
-    const rawBody = Handlebars.compile(data.body)(context);
-    const body = decode(rawBody);
+        const rawSubject = Handlebars.compile(data.subject)(context);
+        subject = decode(rawSubject);
+
+        const rawBody = Handlebars.compile(data.body)(context);
+        body = decode(rawBody);
+    } catch (error) {
+        await publish(
+            emailChannel().status({
+                nodeId,
+                status: "error",
+            }),
+        );
+        throw new NonRetriableError("Email Node: Template compilation failed", {
+            cause: error,
+        });
+    }
 
     const credential = await step.run("get-email-credential", () => {
         return prisma.credential.findUnique({
@@ -137,18 +153,24 @@ export const emailExecutor: NodeExecutor<EmailData> = async ({ data, nodeId, use
                 fromAddress = gmailEmail;
             } else if (credential.type === CredentialType.EMAIL_SMTP) {
                 // SMTP credentials: value = JSON with host, port, secure, username, password, from
-                const decryptedValue = decrypt(credential.value);
-                const smtpCred = JSON.parse(decryptedValue) as SmtpCredentialValue;
-                transporter = nodemailer.createTransport({
-                    host: smtpCred.host,
-                    port: smtpCred.port,
-                    secure: smtpCred.secure,
-                    auth: {
-                        user: smtpCred.username,
-                        pass: smtpCred.password,
-                    },
-                });
-                fromAddress = smtpCred.from || smtpCred.username;
+                try {
+                    const decryptedValue = decrypt(credential.value);
+                    const smtpCred = JSON.parse(decryptedValue) as SmtpCredentialValue;
+                    transporter = nodemailer.createTransport({
+                        host: smtpCred.host,
+                        port: smtpCred.port,
+                        secure: smtpCred.secure,
+                        auth: {
+                            user: smtpCred.username,
+                            pass: smtpCred.password,
+                        },
+                    });
+                    fromAddress = smtpCred.from || smtpCred.username;
+                } catch (error) {
+                    throw new NonRetriableError('Invalid SMTP credentials: failed to decrypt or parse credential value', {
+                        cause: error
+                    });
+                }
             } else {
                 throw new NonRetriableError(`Email Node: Unsupported credential type: ${credential.type}`);
             }

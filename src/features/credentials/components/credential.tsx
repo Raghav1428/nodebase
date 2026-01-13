@@ -189,18 +189,20 @@ export const CredentialForm = ({
     // Effect to parse initial value or update when switching to SMTP
     React.useEffect(() => {
         if (watchType === CredentialType.EMAIL_SMTP) {
-            try {
-                // Try to parse existing value
-                const parsed = JSON.parse(watchValue);
-                // Validate minimal shape (simple check)
-                if (typeof parsed === 'object' && parsed !== null) {
-                    setSmtpConfig({ ...defaultSmtpConfig, ...parsed });
+            if (watchValue && typeof watchValue === 'string' && watchValue.length > 0) {
+                try {
+                    // Try to parse existing value
+                    const parsed = JSON.parse(watchValue);
+                    // Validate minimal shape (simple check)
+                    if (typeof parsed === 'object' && parsed !== null) {
+                        setSmtpConfig({ ...defaultSmtpConfig, ...parsed });
+                    }
+                } catch (e) {
+                    setSmtpConfig(defaultSmtpConfig);
                 }
-            } catch (e) {
-                setSmtpConfig(defaultSmtpConfig);
             }
         }
-    }, [watchType]); // Only run when type changes, or on mount (if type is SMTP)
+    }, [watchType, watchValue]); // Only run when type changes, or on mount (if type is SMTP)
 
     // Helper to update specific SMTP field and sync to form value
     const updateSmtpField = (field: keyof SmtpConfig, value: any) => {
@@ -316,7 +318,20 @@ export const CredentialForm = ({
                                                 <Input 
                                                     type="number"
                                                     value={smtpConfig.port}
-                                                    onChange={(e) => updateSmtpField("port", parseInt(e.target.value) || 0)}
+                                                    onChange={(e) => {
+                                                        const rawValue = e.target.value;
+                                                        if (rawValue === "") {
+                                                            // allow empty input to let user delete the value
+                                                            updateSmtpField("port", undefined);
+                                                            return;
+                                                        }
+                                                        const val = parseInt(rawValue);
+                                                        if (!isNaN(val)) {
+                                                            // Clamp to valid port range
+                                                            const clamped = Math.max(1, Math.min(65535, val));
+                                                            updateSmtpField("port", clamped);
+                                                        }
+                                                    }}
                                                     placeholder="587"
                                                 />
                                             </FormControl>
