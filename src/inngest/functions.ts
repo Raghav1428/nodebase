@@ -76,7 +76,7 @@ export const executeWorkflow = inngest.createFunction(
 
     if (!inngestEventId || !workflowId) throw new NonRetriableError("Event ID or Workflow ID is missing");
 
-    await step.run("check-execution-limit", async () => {
+    await step.run("create-execution", async () => {
       const workflow = await prisma.workflow.findUnique({
         where: { id: workflowId },
         select: { userId: true }
@@ -113,9 +113,7 @@ export const executeWorkflow = inngest.createFunction(
           throw new NonRetriableError("Monthly execution limit reached. Upgrade to Pro for unlimited executions.");
         }
       }
-    });
 
-    await step.run("create-execution", async () => {
       await prisma.execution.upsert({
         where: { inngestEventId },
         update: {},

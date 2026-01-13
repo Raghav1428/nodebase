@@ -119,12 +119,11 @@ export const emailExecutor: NodeExecutor<EmailData> = async ({ data, nodeId, use
         return prisma.credential.findUnique({
             where: {
                 id: data.credentialId,
-                userId,
             },
         })
     });
 
-    if (!credential) {
+    if (!credential || credential.userId !== userId) {
         await publish(
             emailChannel().status({
                 nodeId,
@@ -155,7 +154,30 @@ export const emailExecutor: NodeExecutor<EmailData> = async ({ data, nodeId, use
                 // SMTP credentials: value = JSON with host, port, secure, username, password, from
                 try {
                     const decryptedValue = decrypt(credential.value);
-                    const smtpCred = JSON.parse(decryptedValue) as SmtpCredentialValue;
+                    const rawCred = JSON.parse(decryptedValue);
+
+                    // Runtime validation
+                    if (!rawCred || typeof rawCred !== 'object') {
+                        throw new Error("Credential value is not a valid JSON object");
+                    }
+                    if (typeof rawCred.host !== 'string' || !rawCred.host) {
+                        throw new Error("Missing or invalid 'host' in SMTP credentials");
+                    }
+
+                    const port = Number(rawCred.port);
+                    if (isNaN(port)) {
+                        throw new Error(`Invalid 'port' in SMTP credentials: ${rawCred.port}`);
+                    }
+
+                    const smtpCred: SmtpCredentialValue = {
+                        host: rawCred.host,
+                        port: port,
+                        secure: Boolean(rawCred.secure),
+                        username: String(rawCred.username || ''),
+                        password: String(rawCred.password || ''),
+                        from: String(rawCred.from || '')
+                    };
+
                     transporter = nodemailer.createTransport({
                         host: smtpCred.host,
                         port: smtpCred.port,
@@ -164,6 +186,9 @@ export const emailExecutor: NodeExecutor<EmailData> = async ({ data, nodeId, use
                             user: smtpCred.username,
                             pass: smtpCred.password,
                         },
+                        connectionTimeout: 60000,
+                        greetingTimeout: 30000,
+                        socketTimeout: 300000,
                     });
                     fromAddress = smtpCred.from || smtpCred.username;
                 } catch (error) {
