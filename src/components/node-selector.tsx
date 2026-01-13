@@ -187,6 +187,12 @@ const messagingNodes: NodeTypeOption[] = [
         description: "Send messages to Telegram",
         icon: "/logos/telegram.svg",
     },
+    {
+        type: NodeType.EMAIL,
+        label: "Email",
+        description: "Send emails via SMTP or Gmail",
+        icon: "/logos/email.svg",
+    },
 ];
 
 interface NodeSelectorProps {

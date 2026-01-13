@@ -26,6 +26,7 @@ import { anthropicChatModelChannel } from "./channels/anthropic-chat-model";
 import { openRouterChatModelChannel } from "./channels/openrouter-chat-model";
 import { openAIChatModelChannel } from "./channels/openai-chat-model";
 import { polarClient } from "@/lib/polar";
+import { emailChannel } from "./channels/email";
 
 export const executeWorkflow = inngest.createFunction(
   {
@@ -65,6 +66,7 @@ export const executeWorkflow = inngest.createFunction(
       anthropicChatModelChannel(),
       openRouterChatModelChannel(),
       openAIChatModelChannel(),
+      emailChannel(),
     ]
   },
   async ({ event, step, publish }) => {
