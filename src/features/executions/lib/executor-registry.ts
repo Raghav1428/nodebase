@@ -21,6 +21,7 @@ import { openAIChatModelExecutor } from "../components/chat-models/openai-chat-m
 import { anthropicChatModelExecutor } from "../components/chat-models/anthropic-chat-model/executor";
 import { geminiChatModelExecutor } from "../components/chat-models/gemini-chat-model/executor";
 import { openRouterChatModelExecutor } from "../components/chat-models/openrouter-chat-model/executor";
+import { emailExecutor } from "../components/email/executor";
 
 export const executorRegistry: Record<NodeType, NodeExecutor> = {
     [NodeType.MANUAL_TRIGGER]: manualTriggerExecutor,
@@ -45,6 +46,7 @@ export const executorRegistry: Record<NodeType, NodeExecutor> = {
     [NodeType.ANTHROPIC_CHAT_MODEL]: anthropicChatModelExecutor,
     [NodeType.GEMINI_CHAT_MODEL]: geminiChatModelExecutor,
     [NodeType.OPENROUTER_CHAT_MODEL]: openRouterChatModelExecutor,
+    [NodeType.EMAIL]: emailExecutor,
 }
 
 export const getExecutor = (type: NodeType): NodeExecutor => {

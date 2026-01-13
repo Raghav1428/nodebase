@@ -26,6 +26,7 @@ import { anthropicChatModelChannel } from "./channels/anthropic-chat-model";
 import { openRouterChatModelChannel } from "./channels/openrouter-chat-model";
 import { openAIChatModelChannel } from "./channels/openai-chat-model";
 import { polarClient } from "@/lib/polar";
+import { emailChannel } from "./channels/email";
 
 export const executeWorkflow = inngest.createFunction(
   {
@@ -65,6 +66,7 @@ export const executeWorkflow = inngest.createFunction(
       anthropicChatModelChannel(),
       openRouterChatModelChannel(),
       openAIChatModelChannel(),
+      emailChannel(),
     ]
   },
   async ({ event, step, publish }) => {
@@ -74,7 +76,7 @@ export const executeWorkflow = inngest.createFunction(
 
     if (!inngestEventId || !workflowId) throw new NonRetriableError("Event ID or Workflow ID is missing");
 
-    await step.run("check-execution-limit", async () => {
+    await step.run("create-execution", async () => {
       const workflow = await prisma.workflow.findUnique({
         where: { id: workflowId },
         select: { userId: true }
@@ -111,9 +113,7 @@ export const executeWorkflow = inngest.createFunction(
           throw new NonRetriableError("Monthly execution limit reached. Upgrade to Pro for unlimited executions.");
         }
       }
-    });
 
-    await step.run("create-execution", async () => {
       await prisma.execution.upsert({
         where: { inngestEventId },
         update: {},

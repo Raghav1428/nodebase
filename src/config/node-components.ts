@@ -22,6 +22,7 @@ import { GeminiChatModelNode } from "@/features/executions/components/chat-model
 import { AnthropicChatModelNode } from "@/features/executions/components/chat-models/anthropic-chat-model/node";
 import { OpenRouterChatModelNode } from "@/features/executions/components/chat-models/openrouter-chat-model/node";
 import { OpenAIChatModelNode } from "@/features/executions/components/chat-models/openai-chat-model/node";
+import { EmailNode } from "@/features/executions/components/email/node";
 
 export const nodeComponents = {
     [NodeType.INITIAL]: InitialNode,
@@ -46,6 +47,7 @@ export const nodeComponents = {
     [NodeType.ANTHROPIC_CHAT_MODEL]: AnthropicChatModelNode,
     [NodeType.GEMINI_CHAT_MODEL]: GeminiChatModelNode,
     [NodeType.OPENROUTER_CHAT_MODEL]: OpenRouterChatModelNode,
+    [NodeType.EMAIL]: EmailNode,
 } as const satisfies NodeTypes;
 
 export type RegisteredType = keyof typeof nodeComponents;
