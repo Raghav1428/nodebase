@@ -148,6 +148,9 @@ export const emailExecutor: NodeExecutor<EmailData> = async ({ data, nodeId, use
                         user: gmailEmail,
                         pass: gmailAppPassword,
                     },
+                    connectionTimeout: 60000,
+                    greetingTimeout: 30000,
+                    socketTimeout: 300000,
                 });
                 fromAddress = gmailEmail;
             } else if (credential.type === CredentialType.EMAIL_SMTP) {
