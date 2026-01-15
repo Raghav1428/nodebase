@@ -83,7 +83,7 @@ export const ScheduledTriggerDialog = ({
                     <DialogDescription>
                         Configure the <strong>schedule</strong> for when this workflow should run.
                         <span className="block mt-2 text-sm text-primary dark:text-primary">
-                            <strong>Note:</strong> The scheduler checks every 5 minutes. Your workflow will run at the nearest 5-minute interval after your scheduled time.
+                            <strong>Note:</strong> The scheduler checks every 15 minutes. Your workflow will run at the nearest 5-minute interval after your scheduled time. The scheduler runs in UTC time.
                         </span>
                     </DialogDescription>
                 </DialogHeader>
