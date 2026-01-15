@@ -4,10 +4,11 @@ import {
     CreditCardIcon, 
     FolderOpenIcon,
     HistoryIcon,
-    icons,
     KeyIcon,
     LogOutIcon,
-    StarIcon
+    Moon,
+    StarIcon,
+    Sun
 } from "lucide-react"; 
 import Image from "next/image";
 import Link from "next/link";
@@ -30,6 +31,8 @@ import { useHasActiveSubscription } from "@/features/subscriptions/hooks/use-sub
 import { useExecutionUsage } from "@/features/executions/hooks/use-executions";
 import { Progress } from "@/components/ui/progress";
 import { CircularProgress } from "@/components/ui/circular-progress";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 const menuItems = [
     {
@@ -61,11 +64,21 @@ export const AppSideBar = () => {
     const { hasActiveSubscription, isLoading } = useHasActiveSubscription();
     const usageQuery = useExecutionUsage();
     const { state } = useSidebar();
+    const { theme, setTheme, resolvedTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+    
+    useEffect(() => {
+        setMounted(true);
+    }, []);
     
     const usedCount = usageQuery.data?.count || 0;
     const limit = 100;
     const remainingCount = Math.max(0, limit - usedCount);
     const remainingPercentage = Math.min(100, (remainingCount / limit) * 100);
+    
+    const toggleTheme = () => {
+        setTheme(resolvedTheme === "dark" ? "light" : "dark");
+    };
 
     return (
         <Sidebar collapsible="icon">
@@ -151,6 +164,21 @@ export const AppSideBar = () => {
                         >
                             <CreditCardIcon className="h-4 w-4" />
                             <span>Billing Portal</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton
+                            tooltip="Toggle Theme"
+                            className="gap-x-4 h-10 px-4"
+                            onClick={toggleTheme}
+                            disabled={!mounted}
+                        >
+                            {mounted && resolvedTheme === "dark" ? (
+                                <Sun className="h-4 w-4" />
+                            ) : (
+                                <Moon className="h-4 w-4" />
+                            )}
+                            <span>{mounted ? (resolvedTheme === "dark" ? "Light Mode" : "Dark Mode") : "Toggle Theme"}</span>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>

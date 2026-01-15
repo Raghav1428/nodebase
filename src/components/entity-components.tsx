@@ -187,8 +187,7 @@ interface EmptyViewProps extends StateViewProps {
 
 export const EmptyView = ({ message, onNew }: EmptyViewProps) => {
     return (
-        <Empty className="border-border-dashed bg-white">
-            <EmptyHeader>
+        <Empty className="border border-dashed border-border bg-background">            <EmptyHeader>
                 <EmptyMedia variant="icon">
                     <PackageOpenIcon />
                 </EmptyMedia>
@@ -316,8 +315,8 @@ export const EntityItem = ({
                                         align="end"
                                         onClick={(e) => e.stopPropagation()}
                                     >
-                                        <DropdownMenuItem className="text-red-600 focus:text-red-600 hover:text-red-600 focus:bg-red-50 hover:bg-red-50" onClick={handleRemove}>
-                                            <TrashIcon className="size-4 text-red-600"/>
+                                        <DropdownMenuItem className="text-destructive focus:text-destructive hover:text-destructive focus:bg-destructive/10 hover:bg-destructive/10" onClick={handleRemove}>
+                                            <TrashIcon className="size-4 text-destructive"/>
                                             Delete
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>

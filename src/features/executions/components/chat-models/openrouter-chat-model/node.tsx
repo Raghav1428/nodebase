@@ -83,7 +83,7 @@ export const OpenRouterChatModelNode = memo((props: NodeProps<OpenRouterChatMode
                         rounded="full"
                         className="p-2 rounded-full"
                     >
-                        <Image src="/logos/openrouter.svg" alt="OpenRouter" width={24} height={24} />
+                        <Image src="/logos/openrouter.svg" alt="OpenRouter" width={24} height={24} className="dark-invert" />
                         <BaseHandle id="model-to-ai-agent" type="source" position={Position.Top} />
                     </BaseNode>
 

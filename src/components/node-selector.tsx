@@ -26,6 +26,7 @@ import {
 import { NodeType } from "@/generated/prisma";
 import { Separator } from "./ui/separator";
 import { Badge } from "./ui/badge";
+import { getLogoClassName } from "@/lib/logo-utils";
 
 export type NodeTypeOption = {
     type: NodeType;
@@ -219,7 +220,7 @@ function NodeItem({ nodeType, onClick }: { nodeType: NodeTypeOption, onClick: ()
         >
             <div className="flex items-center gap-4 w-full overflow-hidden">
                 {typeof Icon === "string" ? (
-                    <img src={Icon} alt={nodeType.label} className="size-5 rounded-sm object-contain" />
+                    <img src={Icon} alt={nodeType.label} className={getLogoClassName(Icon, "size-5 rounded-sm object-contain")} />
                 ) : (
                     <Icon className="size-5" />
                 )}

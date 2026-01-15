@@ -8,6 +8,7 @@ import { useEntitySearch } from "../hooks/use-entity-search";
 import { CredentialType, type Credential } from "@/generated/prisma"
 import { useRemoveCredential, useSuspenseCredentials } from "../hooks/use-credentials";
 import Image from "next/image";
+import { getLogoClassName } from "@/lib/logo-utils";
 
 export const CredentialsSearch = () => {
 
@@ -133,7 +134,7 @@ export const CredentialsItem = ({ data }: { data: Credential }) => {
             }
             image={
                 <div className="size-8 flex items-center justify-center">
-                    <Image src={logo} alt={data.type} width={30} height={30}/>
+                    <Image src={logo} alt={data.type} width={30} height={30} className={getLogoClassName(logo)}/>
                 </div>
             }
             onRemove={handleRemove}

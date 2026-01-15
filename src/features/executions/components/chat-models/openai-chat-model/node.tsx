@@ -83,7 +83,7 @@ export const OpenAIChatModelNode = memo((props: NodeProps<OpenAIChatModelNodeTyp
                         rounded="full"
                         className="p-2 rounded-full"
                     >
-                        <Image src="/logos/openai.svg" alt="OpenAI" width={24} height={24} />
+                        <Image src="/logos/openai.svg" alt="OpenAI" width={24} height={24} className="dark-invert" />
                         <BaseHandle id="model-to-ai-agent" type="source" position={Position.Top} />
                     </BaseNode>
 

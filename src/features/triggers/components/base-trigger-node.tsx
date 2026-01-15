@@ -8,6 +8,7 @@ import { BaseNode, BaseNodeContent } from "@/components/react-flow/base-node";
 import { BaseHandle } from "@/components/react-flow/base-handle";
 import { WorkflowNode } from "@/components/workflow-node";
 import { type NodeStatus, NodeStatusIndicator } from "@/components/react-flow/node-status-indicator";
+import { getLogoClassName } from "@/lib/logo-utils";
 
 interface BaseTriggerNodeProps extends NodeProps {
     icon: LucideIcon | string;
@@ -57,7 +58,7 @@ export const BaseTriggerNode = memo(
                     <BaseNode status={status} onDoubleClick={onDoubleClick} className="rounded-l-2xl relative group">
                         <BaseNodeContent>
                             {typeof Icon === "string" ? (
-                                <Image src={Icon} alt={name} width={16} height={16}/>
+                            <Image src={Icon} alt={name} width={16} height={16} className={getLogoClassName(Icon)}/>
                             ) : (
                                 <Icon className="size-4 text-muted-foreground" />
                             )}
