@@ -187,8 +187,7 @@ interface EmptyViewProps extends StateViewProps {
 
 export const EmptyView = ({ message, onNew }: EmptyViewProps) => {
     return (
-        <Empty className="border-border-dashed bg-background">
-            <EmptyHeader>
+        <Empty className="border border-dashed border-border bg-background">            <EmptyHeader>
                 <EmptyMedia variant="icon">
                     <PackageOpenIcon />
                 </EmptyMedia>
