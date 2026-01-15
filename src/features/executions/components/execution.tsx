@@ -91,10 +91,10 @@ export const ExecutionView = ({ executionId }: { executionId: string}) => {
                 </div>
 
                 {execution.error && (
-                    <div className="mt-6 p-4 bg-red-50 rounded-md space-y-3">
+                    <div className="mt-6 p-4 bg-red-50 dark:bg-red-950/50 rounded-md space-y-3">
                         <div>
-                            <p className="text-sm font-medium text-red-900">Error</p>
-                            <p className="text-sm text-red-800 font-mono">{execution.error}</p>
+                            <p className="text-sm font-medium text-red-900 dark:text-red-300">Error</p>
+                            <p className="text-sm text-red-800 dark:text-red-400 font-mono">{execution.error}</p>
                         </div>
 
                         {execution.errorStack && (
@@ -106,13 +106,13 @@ export const ExecutionView = ({ executionId }: { executionId: string}) => {
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="text-red-900 hover:bg-red-100"
+                                        className="text-red-900 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50"
                                     >
                                         {showStackTrace ? "Hide Stack Trace": "Show stack Trace"}
                                     </Button>
                                 </CollapsibleTrigger>
                                 <CollapsibleContent>
-                                    <pre className="text-xs text-red-800 font-mono overflow-auto mt-2 p-2 bg-red-100 rounded">{execution.errorStack}</pre>
+                                    <pre className="text-xs text-red-800 dark:text-red-400 font-mono overflow-auto mt-2 p-2 bg-red-100 dark:bg-red-900/30 rounded">{execution.errorStack}</pre>
                                 </CollapsibleContent>
                             </Collapsible>
                         )}
@@ -120,9 +120,9 @@ export const ExecutionView = ({ executionId }: { executionId: string}) => {
                 )}
 
                 {execution.output && (
-                    <div className="mt-6 p-4 bg-green-50 rounded-md">
-                        <p className="text-sm font-medium mb-2 text-green-700">Output</p>
-                        <pre className="text-xs font-mono overflow-auto">{JSON.stringify(execution.output, null, 2)}</pre>
+                    <div className="mt-6 p-4 bg-green-50 dark:bg-green-950/50 rounded-md">
+                        <p className="text-sm font-medium mb-2 text-green-700 dark:text-green-400">Output</p>
+                        <pre className="text-xs font-mono overflow-auto text-foreground">{JSON.stringify(execution.output, null, 2)}</pre>
                     </div>
                 )}
 
