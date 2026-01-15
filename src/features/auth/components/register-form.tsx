@@ -105,7 +105,7 @@ export function RegisterForm() {
                                         className="w-fulll"
                                         type="button"
                                         disabled={isPending}>
-                                        <Image src="/logos/github.svg" alt="Github" width={20} height={20} />
+                                        <Image src="/logos/github.svg" alt="Github" width={20} height={20} className="dark-invert" />
                                         Continue with GitHub
                                     </Button>
                                     <Button 

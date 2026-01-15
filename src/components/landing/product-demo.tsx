@@ -10,25 +10,25 @@ const useCases = [
     id: "it-ops",
     label: "IT Ops",
     description: "Provision accounts & sync",
-    image: "/use-cases/it-ops.png",
+    image: "/use-cases/it-ops.webp",
   },
   {
     id: "sec-ops",
     label: "Sec Ops",
     description: "Detect & respond to threats",
-    image: "/use-cases/sec-ops.png",
+    image: "/use-cases/sec-ops.webp",
   },
   {
     id: "dev-ops",
     label: "Dev Ops",
     description: "AI-powered CI/CD triggers",
-    image: "/use-cases/dev-ops.png",
+    image: "/use-cases/dev-ops.webp",
   },
   {
     id: "sales",
     label: "Sales",
     description: "Enrich leads & follow up",
-    image: "/use-cases/sales.png",
+    image: "/use-cases/sales.webp",
   },
 ];
 

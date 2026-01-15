@@ -98,7 +98,7 @@ export const McpToolsNode = memo((props: NodeProps<McpToolsNodeType>) => {
                         rounded="full"
                         className="p-2 rounded-full"
                     >
-                        <Image src="/logos/mcp.svg" alt="MCP Tools" width={24} height={24} />
+                        <Image src="/logos/mcp.svg" alt="MCP Tools" width={24} height={24} className="dark-invert" />
                         <BaseHandle id="tools-to-ai-agent" type="source" position={Position.Top} />
                     </BaseNode>
 

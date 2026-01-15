@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import z from "zod";
 import Image from "next/image";
 import Link from "next/link";
+import { getLogoClassName } from "@/lib/logo-utils";
 
 
 const formSchema = z.object({
@@ -267,7 +268,7 @@ export const CredentialForm = ({
                                                     {credentialTypeOptions.map((option) => (
                                                         <SelectItem key={option.value} value={option.value}>
                                                             <div className="flex items-center gap-2">
-                                                                <Image src={option.logo} alt={option.label} width={16} height={16} />
+                                                                <Image src={option.logo} alt={option.label} width={16} height={16} className={getLogoClassName(option.logo)} />
                                                                 <span>{option.label}</span>
                                                             </div>
                                                         </SelectItem>

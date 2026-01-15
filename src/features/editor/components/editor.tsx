@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, useMemo } from 'react';
-import { ReactFlow, applyNodeChanges, applyEdgeChanges, addEdge, type Node, type Edge, type NodeChange, type EdgeChange, type Connection, Background, Controls, MiniMap, useReactFlow, Panel} from '@xyflow/react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { ReactFlow, applyNodeChanges, applyEdgeChanges, addEdge, type Node, type Edge, type NodeChange, type EdgeChange, type Connection, Background, Controls, MiniMap, useReactFlow, Panel, type ColorMode } from '@xyflow/react';
 import { ErrorView, LoadingView } from "@/components/entity-components";
 import { useSuspenseWorkflow } from "@/features/workflows/hooks/use-workflows";
 
@@ -13,6 +13,7 @@ import { editorAtom } from '../store/atoms';
 import { DATABASE, NodeType } from '@/generated/prisma';
 import { ExecuteWorkflowButton } from './execute-workflow-button';
 import { toast } from 'sonner';
+import { useTheme } from 'next-themes';
 
 const DATABASE_NODE_TYPES = [NodeType.POSTGRES, NodeType.MONGODB];
 
@@ -26,11 +27,17 @@ export const EditorError = () => {
 
 export const Editor = ({ workflowId }: { workflowId: string }) => {
     const { data: workflow } = useSuspenseWorkflow(workflowId);
+    const { resolvedTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
 
     const setEditor = useSetAtom(editorAtom);
 
     const [nodes, setNodes] = useState<Node[]>(workflow.nodes);
     const [edges, setEdges] = useState<Edge[]>(workflow.edges);
+    
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const onNodesChange = useCallback(
         (changes : NodeChange[]) => setNodes((nodesSnapshot) => applyNodeChanges(changes, nodesSnapshot)),
@@ -97,6 +104,7 @@ export const Editor = ({ workflowId }: { workflowId: string }) => {
                 nodeTypes={nodeComponents}
                 fitView
                 onInit={setEditor}
+                colorMode={mounted ? (resolvedTheme as ColorMode) || 'light' : 'light'}
                 proOptions={{
                     hideAttribution: true
                 }}

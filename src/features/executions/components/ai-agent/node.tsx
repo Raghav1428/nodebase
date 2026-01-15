@@ -94,6 +94,7 @@ export const AiAgentNode = memo((props: NodeProps<AiAgentNodeType>) => {
                                 alt="AI Agent"
                                 width={18}
                                 height={18}
+                                className="dark-invert"
                             />
                             <span className="text-sm font-medium text-foreground">AI Agent</span>
                         </div>
