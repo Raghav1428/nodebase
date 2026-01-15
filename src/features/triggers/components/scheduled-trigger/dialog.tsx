@@ -8,6 +8,8 @@ import {
     DialogHeader,
     DialogTitle 
 } from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertTriangleIcon } from "lucide-react";
 import {
     Form,
     FormControl,
@@ -83,10 +85,20 @@ export const ScheduledTriggerDialog = ({
                     <DialogDescription>
                         Configure the <strong>schedule</strong> for when this workflow should run.
                         <span className="block mt-2 text-sm text-primary dark:text-primary">
-                            <strong>Note:</strong> The scheduler checks every 15 minutes. Your workflow will run at the nearest 5-minute interval after your scheduled time. The scheduler runs in UTC time.
+                            <strong>Note:</strong> The scheduler checks every 15 minutes. Your workflow will run at the nearest 15-minute interval after your scheduled time. The scheduler runs in UTC time.
                         </span>
                     </DialogDescription>
                 </DialogHeader>
+                
+                {/* Disable scheduler alert */}
+                <Alert variant="destructive" className="mt-4">
+                    <AlertTriangleIcon className="h-4 w-4" />
+                    <AlertTitle>Scheduler Configured but Disabled</AlertTitle>
+                    <AlertDescription className="mt-2">
+                        The background scheduler is temporarily disabled to conserve resources. Your scheduled workflows will not run automatically during this time.
+                    </AlertDescription>
+                </Alert>
+
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8 mt-4">
                         <FormField 

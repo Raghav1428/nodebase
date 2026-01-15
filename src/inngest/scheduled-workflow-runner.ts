@@ -15,6 +15,10 @@ export const scheduledWorkflowRunner = inngest.createFunction(
     { id: "scheduled-workflow-runner", concurrency: 1 },
     { cron: "*/15 * * * *" },
     async ({ step }) => {
+
+        return { checked: 0, triggered: 0, triggeredWorkflows: [] };
+
+        /* 
         const now = new Date();
 
         // 1. Find workflows due to run
@@ -109,5 +113,6 @@ export const scheduledWorkflowRunner = inngest.createFunction(
             triggered: triggeredWorkflows.length,
             triggeredWorkflows,
         };
+        */
     }
 );
