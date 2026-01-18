@@ -56,45 +56,36 @@ export const googleSheetsExecutor: NodeExecutor<GoogleSheetsNodeData> = async ({
     });
 
     if (!data.credentialId) {
-        await publish(googleSheetsChannel().status({ nodeId, status: "error" }));
-        throw new NonRetriableError("Google Sheets Node: Credential is required");
+        await step.run(`google-sheets-validation-error-credential-${nodeId}`, async () => {
+            await publish(googleSheetsChannel().status({ nodeId, status: "error" }));
+            throw new NonRetriableError("Google Sheets Node: Credential is required");
+        });
     }
 
     if (!data.dataVariable) {
-        await publish(googleSheetsChannel().status({ nodeId, status: "error" }));
-        throw new NonRetriableError("Google Sheets Node: Data variable is required");
+        await step.run(`google-sheets-validation-error-data-variable-${nodeId}`, async () => {
+            await publish(googleSheetsChannel().status({ nodeId, status: "error" }));
+            throw new NonRetriableError("Google Sheets Node: Data variable is required");
+        });
     }
 
     try {
         const result = await step.run(`google-sheets-${data.operation}-${nodeId}`, async () => {
-            // Get data from context
-            console.log("Google Sheets - dataVariable:", data.dataVariable);
-            console.log("Google Sheets - context keys:", Object.keys(context));
-
-            // First try to get as a variable path from context
             let rawData = getNestedValue(context, data.dataVariable || "");
-
-            // If not found, try Handlebars template resolution
             if (rawData === undefined && data.dataVariable) {
                 const resolved = resolveVariable(data.dataVariable, context);
-                // If resolved is different from input, it was a template
                 if (resolved !== data.dataVariable) {
                     rawData = resolved;
                 } else {
-                    // Fallback: treat the input as literal text/data
                     rawData = data.dataVariable;
                 }
             }
 
-            console.log("Google Sheets - rawData:", JSON.stringify(rawData)?.slice(0, 500));
-
-            // If rawData is a JSON string, try to parse it
             if (typeof rawData === "string") {
                 try {
                     const parsed = JSON.parse(rawData);
                     if (typeof parsed === "object" || Array.isArray(parsed)) {
                         rawData = parsed;
-                        console.log("Google Sheets - parsed JSON string into:", Array.isArray(parsed) ? "array" : "object");
                     }
                 } catch {
                     // Not valid JSON, keep as string
@@ -122,6 +113,10 @@ export const googleSheetsExecutor: NodeExecutor<GoogleSheetsNodeData> = async ({
             } else {
                 // Fallback - single value (treat as string)
                 sheetData = [[String(rawData || "")]];
+            }
+
+            if(data.operation === "append" && !data.spreadsheetId){
+                throw new NonRetriableError("Google Sheets Node: Spreadsheet ID is required for append operation");
             }
 
             if (data.operation === "append" && data.spreadsheetId) {

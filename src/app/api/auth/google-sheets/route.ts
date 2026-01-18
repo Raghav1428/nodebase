@@ -2,6 +2,15 @@ import { getAuthUrl } from "@/lib/google-sheets";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import crypto from "crypto";
+
+// Create signed state with HMAC for CSRF protection
+function createSignedState(payload: object): string {
+    const secret = process.env.STATE_SECRET || process.env.BETTER_AUTH_SECRET || "fallback-secret";
+    const payloadStr = JSON.stringify(payload);
+    const signature = crypto.createHmac("sha256", secret).update(payloadStr).digest("hex");
+    return Buffer.from(`${payloadStr}.${signature}`).toString("base64");
+}
 
 export async function GET() {
     try {
@@ -13,11 +22,11 @@ export async function GET() {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // State contains user ID for the callback
-        const state = Buffer.from(JSON.stringify({ userId: session.user.id })).toString("base64");
+        const state = createSignedState({
+            userId: session.user.id,
+            ts: Date.now()
+        });
         const authUrl = getAuthUrl(state);
-
-        console.log("Google Sheets OAuth - Redirect URL:", authUrl);
 
         return NextResponse.redirect(authUrl);
     } catch (error) {

@@ -43,9 +43,24 @@ const formSchema = z.object({
         .regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, { message: "Variable name must start with a letter or underscore and can only contain letters, numbers, and underscores" }),
     credentialId: z.string().min(1, "Google Sheets credential is required"),
     operation: z.enum(["create", "append"]),
-    spreadsheetTitle: z.string().optional(),
-    spreadsheetId: z.string().optional(),
+    spreadsheetTitle: z.string().trim().optional(),
+    spreadsheetId: z.string().trim().optional(),
     dataVariable: z.string().min(1, "Data variable is required"),
+}).superRefine((values, ctx) =>{
+    if (values.operation === "create" && !values.spreadsheetTitle?.trim()) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["spreadsheetTitle"],
+            message: "Spreadsheet title is required for create operation",
+        });
+    }
+    if (values.operation === "append" && !values.spreadsheetId?.trim()) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["spreadsheetId"],
+            message: "Spreadsheet ID is required for append operation",
+        });
+    }
 });
 
 export type GoogleSheetsFormValues = z.infer<typeof formSchema>;

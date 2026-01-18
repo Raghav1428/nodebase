@@ -23,7 +23,9 @@ export async function POST(req: NextRequest) {
             changedBy: body.changedBy,
             timestamp: body.timestamp,
             rowData: body.rowData,
+            totalRows: body.totalRows,
             allData: body.allData,
+            allDataTruncated: body.allDataTruncated,
             raw: body,
         };
 

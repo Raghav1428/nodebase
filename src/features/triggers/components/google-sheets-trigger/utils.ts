@@ -1,14 +1,27 @@
 export const generateGoogleSheetsScript = (
   webhookUrl: string,
-) => `// Helper function to get all sheet data as array of objects
-function getAllSheetData(sheet) {
+  options?: { includeFullData?: boolean; maxRows?: number }
+) => {
+  const includeFullData = options?.includeFullData ?? false;
+  const maxRows = options?.maxRows ?? 1000;
+
+  return `// Configuration
+var INCLUDE_FULL_DATA = ${includeFullData}; // Set to true to include all sheet data
+var MAX_ROWS = ${maxRows}; // Maximum rows to fetch (prevents payload limits)
+
+// Helper function to get sheet data with optional row limit
+function getSheetData(sheet, maxRows) {
   var lastRow = sheet.getLastRow();
   var lastCol = sheet.getLastColumn();
   
-  if (lastRow < 2 || lastCol < 1) return [];
+  if (lastRow < 2 || lastCol < 1) return { data: [], truncated: false, totalRows: 0 };
+  
+  var totalDataRows = lastRow - 1;
+  var rowsToFetch = Math.min(totalDataRows, maxRows);
+  var truncated = totalDataRows > maxRows;
   
   var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
-  var dataRange = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+  var dataRange = sheet.getRange(2, 1, rowsToFetch, lastCol).getValues();
   
   var result = [];
   for (var i = 0; i < dataRange.length; i++) {
@@ -20,7 +33,7 @@ function getAllSheetData(sheet) {
     }
     result.push(row);
   }
-  return result;
+  return { data: result, truncated: truncated, totalRows: totalDataRows };
 }
 
 function onEdit(e) {
@@ -46,9 +59,6 @@ function onEdit(e) {
     }
   }
 
-  // Get all sheet data for full context
-  var allData = getAllSheetData(sheet);
-
   // Prepare webhook payload
   var payload = {
     spreadsheetId: spreadsheet.getId(),
@@ -64,8 +74,15 @@ function onEdit(e) {
     changedBy: Session.getActiveUser().getEmail(),
     timestamp: new Date().toISOString(),
     rowData: rowData,
-    allData: allData  // Full sheet data for summarization
+    totalRows: sheet.getLastRow() - 1
   };
+
+  // Only include full sheet data if explicitly enabled
+  if (INCLUDE_FULL_DATA) {
+    var sheetDataResult = getSheetData(sheet, MAX_ROWS);
+    payload.allData = sheetDataResult.data;
+    payload.allDataTruncated = sheetDataResult.truncated;
+  }
 
   // Send to webhook
   var options = {
@@ -102,9 +119,6 @@ function onFormSubmit(e) {
     }
   }
 
-  // Get all sheet data for full context
-  var allData = getAllSheetData(sheet);
-
   var payload = {
     spreadsheetId: spreadsheet.getId(),
     spreadsheetName: spreadsheet.getName(),
@@ -119,8 +133,15 @@ function onFormSubmit(e) {
     changedBy: e.namedValues ? e.namedValues['Email Address'] : null,
     timestamp: new Date().toISOString(),
     rowData: rowData,
-    allData: allData  // Full sheet data for summarization
+    totalRows: sheet.getLastRow() - 1
   };
+
+  // Only include full sheet data if explicitly enabled
+  if (INCLUDE_FULL_DATA) {
+    var sheetDataResult = getSheetData(sheet, MAX_ROWS);
+    payload.allData = sheetDataResult.data;
+    payload.allDataTruncated = sheetDataResult.truncated;
+  }
 
   var options = {
     'method': 'post',
@@ -137,4 +158,5 @@ function onFormSubmit(e) {
     console.error('Webhook failed:', error);
   }
 }`;
+};
 

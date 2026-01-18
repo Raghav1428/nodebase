@@ -88,25 +88,47 @@ export const GoogleSheetsTriggerDialog = ({
                     </div>
 
                     <div className="rounded-lg bg-muted p-4 space-y-3">
-                        <h4 className="font-medium text-sm">Google Apps Script:</h4> 
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={async () => {
-                                const script = generateGoogleSheetsScript(webhookUrl);
-                                try {
-                                    await navigator.clipboard.writeText(script);
-                                    toast.success("Google Apps Script copied to clipboard");
-                                } catch (error) {
-                                    toast.error("Failed to copy Google Apps Script to clipboard");
-                                }
-                            }}
-                        >
-                            <CopyIcon className="size-4 mr-2" />
-                            Copy Google Apps Script
-                        </Button>
-                        <p className="text-sm text-muted-foreground">
-                            This script includes your webhook URL and handles sheet edits.
+                        <h4 className="font-medium text-sm">Google Apps Script:</h4>
+                        <div className="flex gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={async () => {
+                                    const script = generateGoogleSheetsScript(webhookUrl);
+                                    try {
+                                        await navigator.clipboard.writeText(script);
+                                        toast.success("Basic script copied (row data only)");
+                                    } catch (error) {
+                                        toast.error("Failed to copy script");
+                                    }
+                                }}
+                            >
+                                <CopyIcon className="size-4 mr-2" />
+                                Basic Script
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={async () => {
+                                    const script = generateGoogleSheetsScript(webhookUrl, { 
+                                        includeFullData: true, 
+                                        maxRows: 1000 
+                                    });
+                                    try {
+                                        await navigator.clipboard.writeText(script);
+                                        toast.success("Full data script copied (includes all sheet data, max 1000 rows)");
+                                    } catch (error) {
+                                        toast.error("Failed to copy script");
+                                    }
+                                }}
+                            >
+                                <CopyIcon className="size-4 mr-2" />
+                                With All Data
+                            </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            <strong>Basic:</strong> Sends only the changed row.<br/>
+                            <strong>With All Data:</strong> Includes full sheet data (capped at 1000 rows) for summarization.
                         </p>
                     </div>
 
@@ -173,11 +195,23 @@ export const GoogleSheetsTriggerDialog = ({
                                 </code>
                                 <span className="text-xs"> - Changed row as JSON</span>
                             </li>
+                            <li>
+                                <code className="bg-background px-1 py-0.5 rounded text-xs">
+                                    {"{{googleSheets.totalRows}}"}
+                                </code>
+                                <span className="text-xs"> - Total rows in sheet</span>
+                            </li>
                             <li className="pt-1 border-t border-border/50">
                                 <code className="bg-background px-1 py-0.5 rounded text-xs font-bold">
                                     {"{{json googleSheets.allData}}"}
                                 </code>
-                                <span className="text-xs font-medium"> - All sheet data (for summarization)</span>
+                                <span className="text-xs font-medium"> - All sheet data (requires "With All Data" script)</span>
+                            </li>
+                            <li>
+                                <code className="bg-background px-1 py-0.5 rounded text-xs">
+                                    {"{{googleSheets.allDataTruncated}}"}
+                                </code>
+                                <span className="text-xs"> - True if data was capped at 1000 rows</span>
                             </li>
                         </ul>
                     </div>

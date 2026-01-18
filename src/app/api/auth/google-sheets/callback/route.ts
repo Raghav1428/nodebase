@@ -4,10 +4,37 @@ import prisma from "@/lib/db";
 import { CredentialType } from "@/generated/prisma";
 import { type NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
+import crypto from "crypto";
 
 // Get base URL for redirects
 function getBaseUrl(): string {
     return process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+}
+
+// Verify signed state with HMAC for CSRF protection
+function verifySignedState(state: string): { userId: string; ts: number } | null {
+    try {
+        const secret = process.env.STATE_SECRET || process.env.BETTER_AUTH_SECRET || "fallback-secret";
+        const decoded = Buffer.from(state, "base64").toString();
+        const lastDotIndex = decoded.lastIndexOf(".");
+
+        if (lastDotIndex === -1) return null;
+
+        const payloadStr = decoded.substring(0, lastDotIndex);
+        const signature = decoded.substring(lastDotIndex + 1);
+
+        // Recompute expected signature
+        const expectedSignature = crypto.createHmac("sha256", secret).update(payloadStr).digest("hex");
+
+        // Constant-time comparison to prevent timing attacks
+        if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
+            return null;
+        }
+
+        return JSON.parse(payloadStr);
+    } catch {
+        return null;
+    }
 }
 
 export async function GET(req: NextRequest) {
@@ -31,13 +58,16 @@ export async function GET(req: NextRequest) {
             );
         }
 
-        const { userId } = JSON.parse(Buffer.from(state, "base64").toString());
+        // Verify HMAC signature and extract payload
+        const payload = verifySignedState(state);
 
-        if (!userId) {
+        if (!payload || !payload.userId) {
             return NextResponse.redirect(
                 `${baseUrl}/credentials?error=invalid_state`
             );
         }
+
+        const { userId } = payload;
 
         // Exchange code for tokens
         const tokens = await getTokensFromCode(code);
