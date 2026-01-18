@@ -11,10 +11,18 @@ function getBaseUrl(): string {
     return process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 }
 
-// Verify signed state with HMAC for CSRF protection
+// Verify signed state with HMAC for CSRF protection and timestamp validation
+const STATE_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
+const CLOCK_SKEW_MS = 60 * 1000; // 1 minute allowed clock skew
+
 function verifySignedState(state: string): { userId: string; ts: number } | null {
     try {
-        const secret = process.env.STATE_SECRET || process.env.BETTER_AUTH_SECRET || "fallback-secret";
+        const secret = process.env.BETTER_AUTH_SECRET;
+        if (!secret) {
+            console.error("BETTER_AUTH_SECRET must be configured");
+            return null;
+        }
+
         const decoded = Buffer.from(state, "base64").toString();
         const lastDotIndex = decoded.lastIndexOf(".");
 
@@ -26,12 +34,43 @@ function verifySignedState(state: string): { userId: string; ts: number } | null
         // Recompute expected signature
         const expectedSignature = crypto.createHmac("sha256", secret).update(payloadStr).digest("hex");
 
-        // Constant-time comparison to prevent timing attacks
-        if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
+        // Length check before timing-safe comparison
+        const signatureBuffer = Buffer.from(signature);
+        const expectedBuffer = Buffer.from(expectedSignature);
+
+        if (signatureBuffer.length !== expectedBuffer.length) {
             return null;
         }
 
-        return JSON.parse(payloadStr);
+        // Constant-time comparison to prevent timing attacks
+        if (!crypto.timingSafeEqual(signatureBuffer, expectedBuffer)) {
+            return null;
+        }
+
+        // Parse and validate payload after signature verification
+        const payload = JSON.parse(payloadStr);
+
+        // Validate timestamp to prevent replay attacks
+        if (typeof payload.ts !== 'number') {
+            console.error("State missing or invalid timestamp");
+            return null;
+        }
+
+        const now = Date.now();
+        const age = now - payload.ts;
+
+        // Reject tokens from the future (beyond clock skew) or too old
+        if (payload.ts > now + CLOCK_SKEW_MS) {
+            console.error("State timestamp is in the future");
+            return null;
+        }
+
+        if (age > STATE_EXPIRY_MS) {
+            console.error("State has expired");
+            return null;
+        }
+
+        return payload;
     } catch {
         return null;
     }

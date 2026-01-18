@@ -94,7 +94,7 @@ export const googleSheetsExecutor: NodeExecutor<GoogleSheetsNodeData> = async ({
 
             let sheetData: any[][];
             if (Array.isArray(rawData)) {
-                if (rawData.length > 0 && typeof rawData[0] === "object" && !Array.isArray(rawData[0])) {
+                if (rawData.length > 0 && rawData[0] != null && typeof rawData[0] === "object" && !Array.isArray(rawData[0])) {
                     // Array of objects - convert to sheet format
                     sheetData = objectsToSheetData(rawData);
                 } else if (rawData.length > 0 && Array.isArray(rawData[0])) {
@@ -115,7 +115,7 @@ export const googleSheetsExecutor: NodeExecutor<GoogleSheetsNodeData> = async ({
                 sheetData = [[String(rawData || "")]];
             }
 
-            if(data.operation === "append" && !data.spreadsheetId){
+            if (data.operation === "append" && !data.spreadsheetId) {
                 throw new NonRetriableError("Google Sheets Node: Spreadsheet ID is required for append operation");
             }
 

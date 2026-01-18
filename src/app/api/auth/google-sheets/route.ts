@@ -6,7 +6,11 @@ import crypto from "crypto";
 
 // Create signed state with HMAC for CSRF protection
 function createSignedState(payload: object): string {
-    const secret = process.env.STATE_SECRET || process.env.BETTER_AUTH_SECRET || "fallback-secret";
+    const secret = process.env.BETTER_AUTH_SECRET;
+    if (!secret) {
+        console.error("STATE_SECRET or BETTER_AUTH_SECRET must be configured");
+        return "";
+    }
     const payloadStr = JSON.stringify(payload);
     const signature = crypto.createHmac("sha256", secret).update(payloadStr).digest("hex");
     return Buffer.from(`${payloadStr}.${signature}`).toString("base64");
