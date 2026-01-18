@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
             changeType: body.changeType,
             changedRow: body.changedRow,
             changedColumn: body.changedColumn,
+            changedColumnName: body.changedColumnName,
             oldValue: body.oldValue,
             newValue: body.newValue,
             changedBy: body.changedBy,

@@ -12,8 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CopyIcon } from "lucide-react";
 import { useParams } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
 import { generateGoogleSheetsScript } from "./utils";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Props {
     open: boolean;
@@ -28,6 +30,12 @@ export const GoogleSheetsTriggerDialog = ({
     const params = useParams();
     const workflowId = params.workflowId as string;
 
+    // Trigger filter options
+    const [includeFullData, setIncludeFullData] = useState(false);
+    const [sheetName, setSheetName] = useState("");
+    const [triggerValue, setTriggerValue] = useState("");
+    const [debounceSeconds, setDebounceSeconds] = useState(0);
+
     // Construct webhook url
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
     const webhookUrl = `${baseUrl}/api/webhooks/google-sheets?workflowId=${workflowId}`;
@@ -40,6 +48,22 @@ export const GoogleSheetsTriggerDialog = ({
             toast.error("Failed to copy webhook URL to clipboard");
         }
     }
+
+    const copyCustomScript = async () => {
+        const script = generateGoogleSheetsScript(webhookUrl, {
+            includeFullData,
+            maxRows: 1000,
+            sheetName: sheetName.trim(),
+            triggerValue: triggerValue.trim(),
+            debounceSeconds,
+        });
+        try {
+            await navigator.clipboard.writeText(script);
+            toast.success("Custom script copied to clipboard");
+        } catch (error) {
+            toast.error("Failed to copy script");
+        }
+    };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange} >
@@ -87,28 +111,112 @@ export const GoogleSheetsTriggerDialog = ({
                         </ol>
                     </div>
 
+                    <div className="rounded-lg bg-muted p-4 space-y-4 border border-primary/20">
+                        <div className="flex items-center gap-2">
+                            <h4 className="font-medium text-sm">Custom Script</h4>
+                            <span className="px-2 py-0.5 text-[10px] font-medium bg-primary/10 text-primary rounded-full">
+                                Recommended
+                            </span>
+                        </div>
+                        
+                        {/* Trigger Filters */}
+                        <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                    <Label htmlFor="sheetName" className="text-xs">
+                                        Sheet Name (optional)
+                                    </Label>
+                                    <Input
+                                        id="sheetName"
+                                        value={sheetName}
+                                        onChange={(e) => setSheetName(e.target.value)}
+                                        placeholder="e.g. Orders"
+                                        className="h-8 text-sm"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label htmlFor="triggerValue" className="text-xs">
+                                        Trigger Value (optional)
+                                    </Label>
+                                    <Input
+                                        id="triggerValue"
+                                        value={triggerValue}
+                                        onChange={(e) => setTriggerValue(e.target.value)}
+                                        placeholder="e.g. Complete"
+                                        className="h-8 text-sm"
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                    <Label htmlFor="debounce" className="text-xs">
+                                        Debounce (seconds)
+                                    </Label>
+                                    <Input
+                                        id="debounce"
+                                        type="number"
+                                        min={0}
+                                        value={debounceSeconds}
+                                        onChange={(e) => setDebounceSeconds(Number(e.target.value))}
+                                        placeholder="0"
+                                        className="h-8 text-sm"
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center space-x-2 pt-2">
+                                <Checkbox
+                                    id="includeFullData"
+                                    checked={includeFullData}
+                                    onCheckedChange={(checked) => setIncludeFullData(!!checked)}
+                                />
+                                <Label htmlFor="includeFullData" className="text-xs">
+                                    Include all sheet data (max 1000 rows) for summarization
+                                </Label>
+                            </div>
+                        </div>
+                        
+                        <Button
+                            type="button"
+                            onClick={copyCustomScript}
+                            className="w-full"
+                        >
+                            <CopyIcon className="size-4 mr-2" />
+                            Copy Custom Script
+                        </Button>
+                        
+                        <p className="text-xs text-muted-foreground">
+                            <strong>Sheet:</strong> Only trigger on this specific sheet/tab.<br/>
+                            <strong>Value:</strong> Only trigger when any cell changes to this value.<br/>
+                            <strong>Debounce:</strong> Minimum seconds between triggers.
+                        </p>
+                    </div>
+
                     <div className="rounded-lg bg-muted p-4 space-y-3">
-                        <h4 className="font-medium text-sm">Google Apps Script:</h4>
+                        <h4 className="font-medium text-sm text-muted-foreground">Quick Presets</h4>
                         <div className="flex gap-2">
                             <Button
                                 type="button"
                                 variant="outline"
+                                size="sm"
                                 onClick={async () => {
                                     const script = generateGoogleSheetsScript(webhookUrl);
                                     try {
                                         await navigator.clipboard.writeText(script);
-                                        toast.success("Basic script copied (row data only)");
+                                        toast.success("Basic script copied (triggers on any change)");
                                     } catch (error) {
                                         toast.error("Failed to copy script");
                                     }
                                 }}
                             >
-                                <CopyIcon className="size-4 mr-2" />
-                                Basic Script
+                                <CopyIcon className="size-3 mr-1" />
+                                Basic
                             </Button>
                             <Button
                                 type="button"
                                 variant="outline"
+                                size="sm"
                                 onClick={async () => {
                                     const script = generateGoogleSheetsScript(webhookUrl, { 
                                         includeFullData: true, 
@@ -116,19 +224,19 @@ export const GoogleSheetsTriggerDialog = ({
                                     });
                                     try {
                                         await navigator.clipboard.writeText(script);
-                                        toast.success("Full data script copied (includes all sheet data, max 1000 rows)");
+                                        toast.success("Full data script copied (max 1000 rows)");
                                     } catch (error) {
                                         toast.error("Failed to copy script");
                                     }
                                 }}
                             >
-                                <CopyIcon className="size-4 mr-2" />
+                                <CopyIcon className="size-3 mr-1" />
                                 With All Data
                             </Button>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            <strong>Basic:</strong> Sends only the changed row.<br/>
-                            <strong>With All Data:</strong> Includes full sheet data (capped at 1000 rows) for summarization.
+                            <strong>Basic:</strong> Triggers on any change, sends row data only.<br/>
+                            <strong>With All Data:</strong> Basic but includes full sheet (1000 rows) for summarization.
                         </p>
                     </div>
 
