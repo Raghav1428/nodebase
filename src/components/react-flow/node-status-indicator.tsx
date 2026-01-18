@@ -26,13 +26,13 @@ export const SpinnerLoadingIndicator = ({
   
   return (
     <div className="relative">
-      <StatusBorder className="border-blue-700/40" rounded={rounded}>{children}</StatusBorder>
+      <StatusBorder className="border-blue-700/40 dark:border-blue-400/40" rounded={rounded}>{children}</StatusBorder>
 
       <div className={cn("absolute inset-0 z-50 bg-background/50 backdrop-blur-sm", roundedClass)} />
       <div className="absolute inset-0 z-50">
-        <span className="absolute left-[calc(50%-1.25rem)] top-[calc(50%-1.25rem)] inline-block h-10 w-10 animate-ping rounded-full bg-blue-700/20" />
+        <span className="absolute left-[calc(50%-1.25rem)] top-[calc(50%-1.25rem)] inline-block h-10 w-10 animate-ping rounded-full bg-blue-700/20 dark:bg-blue-400/20" />
 
-        <LoaderCircle className="absolute left-[calc(50%-0.75rem)] top-[calc(50%-0.75rem)] size-6 animate-spin text-blue-700" />
+        <LoaderCircle className="absolute left-[calc(50%-0.75rem)] top-[calc(50%-0.75rem)] size-6 animate-spin text-blue-700 dark:text-blue-400" />
       </div>
     </div>
   );
@@ -122,10 +122,10 @@ export const NodeStatusIndicator = ({
       }
     case "success":
       return (
-        <StatusBorder className={cn("border-green-700/50", className)} rounded={rounded}>{children}</StatusBorder>
+        <StatusBorder className={cn("border-green-700/50 dark:border-green-400/50", className)} rounded={rounded}>{children}</StatusBorder>
       );
     case "error":
-      return <StatusBorder className={cn("border-red-700/50", className)} rounded={rounded}>{children}</StatusBorder>;
+      return <StatusBorder className={cn("border-red-700/50 dark:border-red-400/50", className)} rounded={rounded}>{children}</StatusBorder>;
     default:
       return <>{children}</>;
   }

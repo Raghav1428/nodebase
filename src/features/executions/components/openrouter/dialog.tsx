@@ -186,7 +186,7 @@ export const OpenRouterDialog = ({
                                                 {credentials?.map((credential) => (
                                                     <SelectItem key={credential.id} value={credential.id}>
                                                         <div className="flex items-center gap-2">
-                                                            <Image src="/logos/openrouter.svg" alt="OpenRouter" width={16} height={16} />
+                                                            <Image src="/logos/openrouter.svg" alt="OpenRouter" width={16} height={16} className="dark:invert" />
                                                             <span>{credential.name}</span>
                                                         </div>
                                                     </SelectItem>
