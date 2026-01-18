@@ -27,6 +27,8 @@ import { openRouterChatModelChannel } from "./channels/openrouter-chat-model";
 import { openAIChatModelChannel } from "./channels/openai-chat-model";
 import { polarClient } from "@/lib/polar";
 import { emailChannel } from "./channels/email";
+import { googleSheetsTriggerChannel } from "./channels/google-sheets-trigger";
+import { googleSheetsChannel } from "./channels/google-sheets";
 
 export const executeWorkflow = inngest.createFunction(
   {
@@ -51,6 +53,7 @@ export const executeWorkflow = inngest.createFunction(
       stripeTriggerChannel(),
       webhookTriggerChannel(),
       scheduledTriggerChannel(),
+      googleSheetsTriggerChannel(),
       geminiChannel(),
       openAIChannel(),
       anthropicChannel(),
@@ -67,6 +70,7 @@ export const executeWorkflow = inngest.createFunction(
       openRouterChatModelChannel(),
       openAIChatModelChannel(),
       emailChannel(),
+      googleSheetsChannel(),
     ]
   },
   async ({ event, step, publish }) => {

@@ -50,6 +50,12 @@ const triggerNodes: NodeTypeOption[] = [
         icon: "/logos/googleform.svg",
     },
     {
+        type: NodeType.GOOGLE_SHEETS_TRIGGER,
+        label: "Google Sheets",
+        description: "Runs the flow when a Google Sheet is edited.",
+        icon: "/logos/google-sheets.svg",
+    },
+    {
         type: NodeType.STRIPE_TRIGGER,
         label: "Stripe Event",
         description: "Runs the flow when a Stripe event is captured.",
@@ -193,6 +199,12 @@ const messagingNodes: NodeTypeOption[] = [
         label: "Email",
         description: "Send emails via SMTP or Gmail",
         icon: "/logos/email.svg",
+    },
+    {
+        type: NodeType.GOOGLE_SHEETS,
+        label: "Google Sheets",
+        description: "Export data to Google Spreadsheets",
+        icon: "/logos/google-sheets.svg",
     },
 ];
 

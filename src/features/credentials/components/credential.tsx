@@ -75,6 +75,12 @@ const credentialTypeOptions = [
         value: CredentialType.EMAIL_SMTP,
         label: "SMTP Email",
         logo: "/logos/email.svg"
+    },
+    {
+        value: CredentialType.GOOGLE_SHEETS,
+        label: "Google Sheets",
+        logo: "/logos/google.svg",
+        isOAuth: true
     }
 ]
 
@@ -298,7 +304,27 @@ export const CredentialForm = ({
                                 )}
                             />
                             
-                            {watchType === CredentialType.EMAIL_SMTP ? (
+                            {watchType === CredentialType.GOOGLE_SHEETS ? (
+                                <div className="space-y-4 border p-4 rounded-md bg-slate-50 dark:bg-slate-900">
+                                    <h3 className="font-medium text-sm">Google Sheets OAuth</h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        Connect your Google account to allow the application to create and edit spreadsheets on your behalf.
+                                    </p>
+                                    <Button
+                                        type="button"
+                                        onClick={() => {
+                                            window.location.href = "/api/auth/google-sheets";
+                                        }}
+                                        className="w-full"
+                                    >
+                                        <Image src="/logos/google.svg" alt="Google Sheets" width={20} height={20} className="mr-2" />
+                                        Connect Google Account
+                                    </Button>
+                                    <p className="text-xs text-muted-foreground">
+                                        You will be redirected to Google to authorize access. After connecting, a credential will be automatically created.
+                                    </p>
+                                </div>
+                            ) : watchType === CredentialType.EMAIL_SMTP ? (
                                 <div className="space-y-4 border p-4 rounded-md bg-slate-50 dark:bg-slate-900">
                                     <h3 className="font-medium text-sm">SMTP Configuration</h3>
                                     
