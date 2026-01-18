@@ -108,6 +108,7 @@ const credentialLogos: Record<CredentialType, string> = {
     [CredentialType.MONGODB]: "/logos/mongodb.svg",
     [CredentialType.EMAIL_SMTP]: "/logos/email.svg",
     [CredentialType.EMAIL_GMAIL]: "/logos/google.svg",
+    [CredentialType.GOOGLE_SHEETS]: "/logos/google.svg",
 }
 
 export const CredentialsItem = ({ data }: { data: Credential }) => {

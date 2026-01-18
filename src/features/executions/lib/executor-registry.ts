@@ -3,6 +3,7 @@ import { NodeExecutor } from "../types";
 import { manualTriggerExecutor } from "@/features/triggers/components/manual-trigger/executor";
 import { httpRequestExecutor } from "../components/http-request/executor";
 import { googleFormTriggerExecutor } from "@/features/triggers/components/google-form-trigger/executor";
+import { googleSheetsTriggerExecutor } from "@/features/triggers/components/google-sheets-trigger/executor";
 import { stripeTriggerExecutor } from "@/features/triggers/components/stripe-trigger/executor";
 import { geminiExecutor } from "../components/gemini/executor";
 import { openaiExecutor } from "../components/openai/executor";
@@ -22,12 +23,14 @@ import { anthropicChatModelExecutor } from "../components/chat-models/anthropic-
 import { geminiChatModelExecutor } from "../components/chat-models/gemini-chat-model/executor";
 import { openRouterChatModelExecutor } from "../components/chat-models/openrouter-chat-model/executor";
 import { emailExecutor } from "../components/email/executor";
+import { googleSheetsExecutor } from "../components/google-sheets/executor";
 
 export const executorRegistry: Record<NodeType, NodeExecutor> = {
     [NodeType.MANUAL_TRIGGER]: manualTriggerExecutor,
     [NodeType.INITIAL]: manualTriggerExecutor,
     [NodeType.HTTP_REQUEST]: httpRequestExecutor,
     [NodeType.GOOGLE_FORM_TRIGGER]: googleFormTriggerExecutor,
+    [NodeType.GOOGLE_SHEETS_TRIGGER]: googleSheetsTriggerExecutor,
     [NodeType.STRIPE_TRIGGER]: stripeTriggerExecutor,
     [NodeType.GEMINI]: geminiExecutor,
     [NodeType.ANTHROPIC]: anthropicExecutor,
@@ -47,6 +50,7 @@ export const executorRegistry: Record<NodeType, NodeExecutor> = {
     [NodeType.GEMINI_CHAT_MODEL]: geminiChatModelExecutor,
     [NodeType.OPENROUTER_CHAT_MODEL]: openRouterChatModelExecutor,
     [NodeType.EMAIL]: emailExecutor,
+    [NodeType.GOOGLE_SHEETS]: googleSheetsExecutor,
 }
 
 export const getExecutor = (type: NodeType): NodeExecutor => {

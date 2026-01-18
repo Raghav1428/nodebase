@@ -12,6 +12,7 @@ import { MongoDBNode } from "@/features/executions/components/database/mongodb/n
 import { McpToolsNode } from "@/features/executions/tools/mcp-tools/node";
 import { AiAgentNode } from "@/features/executions/components/ai-agent/node";
 import { GoogleFormTriggerNode } from "@/features/triggers/components/google-form-trigger/node";
+import { GoogleSheetsTriggerNode } from "@/features/triggers/components/google-sheets-trigger/node";
 import { ManualTriggerNode } from "@/features/triggers/components/manual-trigger/node";
 import { ScheduledTriggerNode } from "@/features/triggers/components/scheduled-trigger/node";
 import { StripeTriggerNode } from "@/features/triggers/components/stripe-trigger/node";
@@ -23,12 +24,14 @@ import { AnthropicChatModelNode } from "@/features/executions/components/chat-mo
 import { OpenRouterChatModelNode } from "@/features/executions/components/chat-models/openrouter-chat-model/node";
 import { OpenAIChatModelNode } from "@/features/executions/components/chat-models/openai-chat-model/node";
 import { EmailNode } from "@/features/executions/components/email/node";
+import { GoogleSheetsNode } from "@/features/executions/components/google-sheets/node";
 
 export const nodeComponents = {
     [NodeType.INITIAL]: InitialNode,
     [NodeType.HTTP_REQUEST]: HttpRequestNode,
     [NodeType.MANUAL_TRIGGER]: ManualTriggerNode,
     [NodeType.GOOGLE_FORM_TRIGGER]: GoogleFormTriggerNode,
+    [NodeType.GOOGLE_SHEETS_TRIGGER]: GoogleSheetsTriggerNode,
     [NodeType.STRIPE_TRIGGER]: StripeTriggerNode,
     [NodeType.WEBHOOK_TRIGGER]: WebhookTriggerNode,
     [NodeType.SCHEDULED_TRIGGER]: ScheduledTriggerNode,
@@ -48,6 +51,7 @@ export const nodeComponents = {
     [NodeType.GEMINI_CHAT_MODEL]: GeminiChatModelNode,
     [NodeType.OPENROUTER_CHAT_MODEL]: OpenRouterChatModelNode,
     [NodeType.EMAIL]: EmailNode,
+    [NodeType.GOOGLE_SHEETS]: GoogleSheetsNode,
 } as const satisfies NodeTypes;
 
 export type RegisteredType = keyof typeof nodeComponents;
