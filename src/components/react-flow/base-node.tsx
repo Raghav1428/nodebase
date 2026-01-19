@@ -40,13 +40,13 @@ export const BaseNode = forwardRef<
     > 
       {props.children}
       {status === "error" && (
-        <XCircleIcon className={cn("absolute size-2.5 text-red-700 stroke-3", iconPositionClass)}/>  
+        <XCircleIcon className={cn("absolute size-2.5 text-red-700 stroke-3 dark:text-red-400", iconPositionClass)}/>  
       )}
       {status === "success" && (
-        <CheckIcon className={cn("absolute size-2.5 text-green-700 stroke-3", iconPositionClass)}/>  
+        <CheckIcon className={cn("absolute size-2.5 text-green-700 stroke-3 dark:text-green-400", iconPositionClass)}/>  
       )}
       {status === "loading" && (
-        <Loader2Icon className={cn("absolute h-2.5 w-2.5 text-blue-700 stroke-3 animate-spin z-50", loadingIconPositionClass)}/>  
+        <Loader2Icon className={cn("absolute h-2.5 w-2.5 text-blue-700 stroke-3 dark:text-blue-400 animate-spin z-50", loadingIconPositionClass)}/>  
       )}
     </div>
   );
