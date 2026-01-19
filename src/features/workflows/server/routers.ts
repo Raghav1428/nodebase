@@ -45,8 +45,18 @@ export const workflowsRouter = createTRPCRouter({
             });
 
             if (!result.success) {
+                let code: "NOT_FOUND" | "FORBIDDEN" | "BAD_REQUEST" | "INTERNAL_SERVER_ERROR" = "INTERNAL_SERVER_ERROR";
+
+                if (result.error === "Node not found") {
+                    code = "NOT_FOUND";
+                } else if (result.error === "Unauthorized") {
+                    code = "FORBIDDEN";
+                } else if (result.error === "Trigger nodes cannot be tested individually") {
+                    code = "BAD_REQUEST";
+                }
+
                 throw new TRPCError({
-                    code: "INTERNAL_SERVER_ERROR",
+                    code,
                     message: result.error || "Node execution failed",
                 });
             }

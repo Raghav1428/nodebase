@@ -35,6 +35,7 @@ function extractVariables(data: Record<string, unknown>): string[] {
 
     function searchValue(value: unknown) {
         if (typeof value === "string") {
+            regex.lastIndex = 0;
             let match;
             while ((match = regex.exec(value)) !== null) {
                 // Get the variable name, removing 'json ' prefix if present
@@ -278,7 +279,7 @@ export const TestNodeDialog = ({
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
                         Close
                     </Button>
-                    <Button onClick={handleRunTest} disabled={isRunning}>
+                    <Button onClick={handleRunTest} disabled={isRunning || variables.some(v => !variableValues[v]?.trim())}>
                         {isRunning ? (
                             <>
                                 <Loader2Icon className="size-4 animate-spin mr-2" />

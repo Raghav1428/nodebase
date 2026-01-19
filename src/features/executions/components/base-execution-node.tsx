@@ -57,8 +57,8 @@ export const BaseExecutionNode = memo(
             })
         };
 
-        const handleTest = workflowId ? () => {
-            if (!isSubscriptionLoading && !hasActiveSubscription) {
+        const handleTest = workflowId && !isSubscriptionLoading ? () => {
+            if (!hasActiveSubscription) {
                 setUpgradeModalOpen(true);
                 return;
             }
