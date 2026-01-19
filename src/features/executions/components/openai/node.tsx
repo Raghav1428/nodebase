@@ -67,6 +67,7 @@ export const OpenAINode = memo((props: NodeProps<OpenAINodeType>) => {
                 onSettings={handleOpenSettings}
                 onDoubleClick={handleOpenSettings}
                 status={nodeStatus}
+                nodeData={nodeData as Record<string, unknown>}
             />
         </>
     )

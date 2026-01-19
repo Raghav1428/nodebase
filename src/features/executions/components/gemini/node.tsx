@@ -67,6 +67,7 @@ export const GeminiNode = memo((props: NodeProps<GeminiNodeType>) => {
                 onSettings={handleOpenSettings}
                 onDoubleClick={handleOpenSettings}
                 status={nodeStatus}
+                nodeData={nodeData as Record<string, unknown>}
             />
         </>
     )

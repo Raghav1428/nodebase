@@ -66,6 +66,7 @@ export const DiscordNode = memo((props: NodeProps<DiscordNodeType>) => {
                 onSettings={handleOpenSettings}
                 onDoubleClick={handleOpenSettings}
                 status={nodeStatus}
+                nodeData={nodeData as Record<string, unknown>}
             />
         </>
     )

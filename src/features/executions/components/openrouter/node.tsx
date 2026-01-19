@@ -67,6 +67,7 @@ export const OpenRouterNode = memo((props: NodeProps<OpenRouterNodeType>) => {
                 onSettings={handleOpenSettings}
                 onDoubleClick={handleOpenSettings}
                 status={nodeStatus}
+                nodeData={nodeData as Record<string, unknown>}
             />
         </>
     )

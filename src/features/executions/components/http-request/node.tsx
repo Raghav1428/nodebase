@@ -67,6 +67,7 @@ export const HttpRequestNode = memo((props: NodeProps<HttpRequestNodeType>) => {
                 onSettings={handleOpenSettings}
                 onDoubleClick={handleOpenSettings}
                 status={nodeStatus}
+                nodeData={nodeData as Record<string, unknown>}
             />
         </>
     )

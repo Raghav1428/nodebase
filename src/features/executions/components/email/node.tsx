@@ -67,6 +67,7 @@ export const EmailNode = memo((props: NodeProps<EmailNodeType>) => {
                 onSettings={handleOpenSettings}
                 onDoubleClick={handleOpenSettings}
                 status={nodeStatus}
+                nodeData={nodeData as Record<string, unknown>}
             />
         </>
     )

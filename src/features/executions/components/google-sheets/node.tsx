@@ -72,6 +72,7 @@ export const GoogleSheetsNode = memo((props: NodeProps<GoogleSheetsNodeType>) =>
                 onSettings={handleOpenSettings}
                 onDoubleClick={handleOpenSettings}
                 status={nodeStatus}
+                nodeData={nodeData as Record<string, unknown>}
             />
         </>
     )

@@ -9,6 +9,7 @@ import { PAGINATION } from "@/config/constants";
 import { NodeType } from "@/generated/prisma";
 import type { Node, Edge } from "@xyflow/react";
 import { sendWorkflowExecution } from "@/inngest/utils";
+import { executeNodeForTest } from "@/features/executions/lib/test-executor";
 
 export const workflowsRouter = createTRPCRouter({
     execute: protectedProcedure
@@ -25,6 +26,36 @@ export const workflowsRouter = createTRPCRouter({
                 workflowId: input.id,
             });
             return workflow
+        }
+        ),
+
+    executeNode: premiumProcedure
+        .input(z.object({
+            workflowId: z.string(),
+            nodeId: z.string(),
+            mockContext: z.record(z.string(), z.any()).optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            // Execute node synchronously and return result
+            const result = await executeNodeForTest({
+                workflowId: input.workflowId,
+                nodeId: input.nodeId,
+                userId: ctx.auth.user.id,
+                mockContext: input.mockContext,
+            });
+
+            if (!result.success) {
+                throw new TRPCError({
+                    code: "INTERNAL_SERVER_ERROR",
+                    message: result.error || "Node execution failed",
+                });
+            }
+
+            return {
+                success: true,
+                nodeId: input.nodeId,
+                output: result.output,
+            };
         }
         ),
 
