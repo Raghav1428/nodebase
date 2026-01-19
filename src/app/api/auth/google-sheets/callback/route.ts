@@ -5,6 +5,7 @@ import { CredentialType } from "@/generated/prisma";
 import { type NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import crypto from "crypto";
+import { revalidatePath } from "next/cache";
 
 // Get base URL for redirects
 function getBaseUrl(): string {
@@ -140,6 +141,7 @@ export async function GET(req: NextRequest) {
             },
         });
 
+        revalidatePath("/credentials");
         return NextResponse.redirect(
             `${baseUrl}/credentials?success=google_sheets_connected`
         );

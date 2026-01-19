@@ -6,6 +6,7 @@ import z from "zod";
 import { PAGINATION } from "@/config/constants";
 import { CredentialType } from "@/generated/prisma";
 import { encrypt } from "@/lib/encryption";
+import { revokeGoogleCredential } from "@/lib/google-sheets";
 
 export const credentialsRouter = createTRPCRouter({
 
@@ -57,11 +58,22 @@ export const credentialsRouter = createTRPCRouter({
 
     remove: protectedProcedure
         .input(z.object({ id: z.string() }))
-        .mutation(({ ctx, input }) => {
+        .mutation(async ({ ctx, input }) => {
+            const userId = ctx.auth.user.id;
+
+            // Check if it's a Google Sheets credential and revoke token
+            const credential = await prisma.credential.findUnique({
+                where: { id: input.id, userId },
+            });
+
+            if (credential?.type === CredentialType.GOOGLE_SHEETS && credential.value) {
+                await revokeGoogleCredential(credential.value);
+            }
+
             return prisma.credential.delete({
                 where: {
                     id: input.id,
-                    userId: ctx.auth.user.id,
+                    userId,
                 }
             });
         }),

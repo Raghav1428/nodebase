@@ -389,3 +389,18 @@ function flattenNestedData(data: Record<string, any>[]): any[][] {
 
     return allRows;
 }
+
+export async function revokeGoogleCredential(encryptedValue: string) {
+    try {
+        const tokenData: GoogleSheetsCredentialValue = JSON.parse(decrypt(encryptedValue));
+        const oauth2Client = getOAuth2Client();
+
+        const tokenToRevoke = tokenData.refresh_token || tokenData.access_token;
+
+        if (tokenToRevoke) {
+            await oauth2Client.revokeToken(tokenToRevoke);
+        }
+    } catch (error) {
+        console.error("Failed to revoke Google credential:", error);
+    }
+}
