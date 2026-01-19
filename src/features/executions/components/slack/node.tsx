@@ -65,6 +65,7 @@ export const SlackNode = memo((props: NodeProps<SlackNodeType>) => {
                 onSettings={handleOpenSettings}
                 onDoubleClick={handleOpenSettings}
                 status={nodeStatus}
+                nodeData={nodeData as Record<string, unknown>}
             />
         </>
     )
