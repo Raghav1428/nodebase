@@ -23,9 +23,13 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-    SidebarMenuSubItem,
     useSidebar,
 } from "@/components/ui/sidebar";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { authClient } from "@/lib/auth-client";
 import { useHasActiveSubscription } from "@/features/subscriptions/hooks/use-subscription";
 import { useExecutionUsage } from "@/features/executions/hooks/use-executions";
@@ -126,9 +130,16 @@ export const AppSideBar = () => {
                     {!hasActiveSubscription && !isLoading && (
                         <SidebarMenuItem>
                             {state === "collapsed" ? (
-                                <div className="flex justify-center py-2" title={`${remainingCount} executions remaining`}>
-                                     <CircularProgress value={remainingPercentage} size={20} className="text-muted-foreground" />
-                                </div>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <div className="flex justify-center py-2">
+                                            <CircularProgress value={remainingPercentage} size={20} className="text-muted-foreground" />
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="right">
+                                        <p>Executions Remaining: {remainingCount} / {limit}</p>
+                                    </TooltipContent>
+                                </Tooltip>
                             ) : (
                                 <div className="px-4 py-2">
                                     <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
