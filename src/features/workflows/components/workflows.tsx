@@ -3,6 +3,7 @@
 import { formatDistanceToNow } from "date-fns";
 import { useCreateWorkflow, useRemoveWorkflow, useSuspenseWorkflows } from "../hooks/use-workflows"
 import { EmptyView, EntityContainer, EntityHeader, EntityItem, EntityList, EntityPagination, EntitySearch, ErrorView, LoadingView, EntityListSkeleton } from "@/components/entity-components";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useUpgradeModal } from "@/hooks/use-upgrade-modal";
 import { useRouter } from "next/navigation";
 import { useWorkflowParams } from "../hooks/use-workflow-params";
@@ -105,7 +106,7 @@ export const WorkflowsContainerSkeleton = () => {
     return (
         <EntityContainer
             header={<WorkflowsHeader disabled />}
-            search={<WorkflowsSearch />}
+            search={<Skeleton className="h-10 w-full max-w-sm" />}
         >
             <WorkflowsLoading />
         </EntityContainer>

@@ -1,4 +1,4 @@
-import { CredentialsContainer, CredentialsError, CredentialsList, CredentialsLoading } from "@/features/credentials/components/credentials";
+import { CredentialsContainer, CredentialsContainerSkeleton, CredentialsError, CredentialsList, CredentialsLoading } from "@/features/credentials/components/credentials";
 import { credentialParamsLoader } from "@/features/credentials/server/params-loader";
 import { prefetchCredentials } from "@/features/credentials/server/prefetch";
 import { requireAuth } from "@/lib/auth-utils";
@@ -19,15 +19,17 @@ const Page = async ({ searchParams }: Props) => {
     prefetchCredentials(params);
 
     return(
-        <CredentialsContainer>
-            <HydrateClient>
-                <ErrorBoundary fallback={<CredentialsError />}>
-                    <Suspense fallback={<CredentialsLoading />}>
-                        <CredentialsList/>
-                    </Suspense>
-                </ErrorBoundary>
-            </HydrateClient>
-        </CredentialsContainer>
+        <HydrateClient>
+            <ErrorBoundary fallback={<CredentialsError />}>
+                <Suspense fallback={<CredentialsContainerSkeleton />}>
+                    <CredentialsContainer>
+                        <Suspense fallback={<CredentialsLoading />}>
+                            <CredentialsList/>
+                        </Suspense>
+                    </CredentialsContainer>
+                </Suspense>
+            </ErrorBoundary>
+        </HydrateClient>
     )
 }
 
