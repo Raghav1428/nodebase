@@ -1,5 +1,5 @@
 import { ExecutionView } from "@/features/executions/components/execution";
-import { ExecutionsError, ExecutionsLoading } from "@/features/executions/components/executions";
+import { ExecutionsError, ExecutionSkeleton } from "@/features/executions/components/executions";
 import { prefetchExecution } from "@/features/executions/server/prefetch";
 import { requireAuth } from "@/lib/auth-utils";
 import { HydrateClient } from "@/trpc/server";
@@ -23,7 +23,7 @@ const Page = async ( { params }: PageProps) => {
             <div className="mx-auto max-w-screen-md w-full  flex  flex-col gap-y-8 h-full">
                 <HydrateClient>
                     <ErrorBoundary fallback={<ExecutionsError />}>
-                        <Suspense fallback={<ExecutionsLoading />}>
+                        <Suspense fallback={<ExecutionSkeleton />}>
                             <ExecutionView executionId={executionId}/>
                         </Suspense>
                     </ErrorBoundary>

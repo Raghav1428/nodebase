@@ -1,7 +1,9 @@
 "use client";
 
 import { formatDistanceToNow } from "date-fns";
-import { EmptyView, EntityContainer, EntityHeader, EntityItem, EntityList, EntityPagination, ErrorView, LoadingView } from "@/components/entity-components";
+import { EmptyView, EntityContainer, EntityHeader, EntityItem, EntityList, EntityPagination, EntitySearch, ErrorView, LoadingView, EntityListSkeleton } from "@/components/entity-components";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Execution, ExecutionStatus } from "@/generated/prisma";
 import { useSuspenseExecutions } from "../hooks/use-executions";
 import { useExecutionParams } from "../hooks/use-execution-params";
@@ -55,7 +57,43 @@ export const ExecutionsContainer = ({children, workflowId}: {children: React.Rea
 }
 
 export const ExecutionsLoading = () => {
-    return <LoadingView message="Loading executions..."/>
+    return <EntityListSkeleton />
+}
+
+export const ExecutionsContainerSkeleton = () => {
+    return (
+        <EntityContainer
+             header={<ExecutionsHeader/>}
+        >
+            <ExecutionsLoading />
+        </EntityContainer>
+    )
+}
+
+export const ExecutionSkeleton = () => {
+    return (
+        <Card className="shadow-none">
+            <CardHeader>
+                <div className="flex items-center gap-3">
+                    <Skeleton className="size-5 rounded-full" />
+                    <div>
+                        <Skeleton className="h-6 w-32 mb-1" />
+                        <Skeleton className="h-4 w-48" />
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i}>
+                            <Skeleton className="h-4 w-24 mb-2" />
+                            <Skeleton className="h-4 w-32" />
+                        </div>
+                    ))}
+                </div>
+            </CardContent>
+        </Card>
+    )
 }
 
 export const ExecutionsError = () => {

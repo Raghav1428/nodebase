@@ -1,4 +1,4 @@
-import { ExecutionsContainer, ExecutionsError, ExecutionsList, ExecutionsLoading } from "@/features/executions/components/executions";
+import { ExecutionsContainer, ExecutionsContainerSkeleton, ExecutionsError, ExecutionsList, ExecutionsLoading } from "@/features/executions/components/executions";
 import { executionParamsLoader } from "@/features/executions/server/params-loader";
 import { prefetchExecutions } from "@/features/executions/server/prefetch";
 import { requireAuth } from "@/lib/auth-utils";
@@ -22,15 +22,17 @@ const Page = async ({ searchParams }: Props) => {
     });
 
     return(
-        <ExecutionsContainer>
-            <HydrateClient>
-                <ErrorBoundary fallback={<ExecutionsError />}>
-                    <Suspense fallback={<ExecutionsLoading />}>
-                        <ExecutionsList />
-                    </Suspense>
-                </ErrorBoundary>
-            </HydrateClient>
-        </ExecutionsContainer>
+        <HydrateClient>
+            <ErrorBoundary fallback={<ExecutionsError />}>
+                <Suspense fallback={<ExecutionsContainerSkeleton />}>
+                    <ExecutionsContainer>
+                        <Suspense fallback={<ExecutionsLoading />}>
+                            <ExecutionsList />
+                        </Suspense>
+                    </ExecutionsContainer>
+                </Suspense>
+            </ErrorBoundary>
+        </HydrateClient>
     )
 }
 

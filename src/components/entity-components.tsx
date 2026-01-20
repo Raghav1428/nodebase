@@ -6,6 +6,7 @@ import { Empty, EmptyContent, EmptyDescription,  EmptyHeader, EmptyMedia, EmptyT
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardDescription,  CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Skeleton } from "@/components/ui/skeleton";
 
 type EntityHeaderProps = {
     title: string;
@@ -329,3 +330,25 @@ export const EntityItem = ({
         </Link>
     )
 };
+
+export const EntityListSkeleton = () => {
+    return (
+        <div className="flex flex-col gap-y-4">
+             {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i}>
+                    <Card className="p-4 shadow-none">
+                        <CardContent className="flex flex-row items-center justify-between p-0">
+                            <div className="flex items-center gap-3">
+                                <Skeleton className="size-8 rounded-md" />
+                                <div className="space-y-2">
+                                    <Skeleton className="h-4 w-[200px]" />
+                                    <Skeleton className="h-3 w-[150px]" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+             ))}
+        </div>
+    )
+}

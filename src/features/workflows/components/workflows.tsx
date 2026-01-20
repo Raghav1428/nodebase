@@ -2,7 +2,8 @@
 
 import { formatDistanceToNow } from "date-fns";
 import { useCreateWorkflow, useRemoveWorkflow, useSuspenseWorkflows } from "../hooks/use-workflows"
-import { EmptyView, EntityContainer, EntityHeader, EntityItem, EntityList, EntityPagination, EntitySearch, ErrorView, LoadingView } from "@/components/entity-components";
+import { EmptyView, EntityContainer, EntityHeader, EntityItem, EntityList, EntityPagination, EntitySearch, ErrorView, LoadingView, EntityListSkeleton } from "@/components/entity-components";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useUpgradeModal } from "@/hooks/use-upgrade-modal";
 import { useRouter } from "next/navigation";
 import { useWorkflowParams } from "../hooks/use-workflow-params";
@@ -98,7 +99,18 @@ export const WorkflowsContainer = ({children}: {children: React.ReactNode}) => {
 }
 
 export const WorkflowsLoading = () => {
-    return <LoadingView message="Loading workflows..."/>
+    return <EntityListSkeleton />
+}
+
+export const WorkflowsContainerSkeleton = () => {
+    return (
+        <EntityContainer
+            header={<WorkflowsHeader disabled />}
+            search={<Skeleton className="h-10 w-[200px] ml-auto" />}
+        >
+            <WorkflowsLoading />
+        </EntityContainer>
+    )
 }
 
 export const WorkflowsError = () => {
