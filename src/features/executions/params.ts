@@ -10,4 +10,5 @@ export const executionParams = {
         .withDefault(PAGINATION.DEFAULT_PAGE_SIZE)
         .withOptions({ clearOnDefault: true }),
 
+    workflowId: parseAsString
 }

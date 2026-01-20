@@ -10,7 +10,9 @@ import Link from "next/link";
 import { useSuspenseWorkflow, useUpdateWorkflow, useUpdateWorkflowName } from "@/features/workflows/hooks/use-workflows";
 import { useAtomValue } from "jotai";
 import { editorAtom } from "../store/atoms";
-import { id } from "date-fns/locale";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAtom } from "jotai";
+import { viewModeAtom } from "../store/atoms";
 
 export const EditorSaveButton = ({ workflowId }: {workflowId: string}) => {
 
@@ -127,6 +129,19 @@ export const EditorBreadcrumbs = ({ workflowId }: {workflowId: string}) => {
             </BreadcrumbList>
         </Breadcrumb>
 
+    )
+};
+
+export const ViewModeSelector = () => {
+    const [viewMode, setViewMode] = useAtom(viewModeAtom);
+
+    return (
+        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)} className="w-[200px]">
+            <TabsList className="grid w-full grid-cols-2 h-8">
+                <TabsTrigger value="workflow" className="text-xs">Workflow</TabsTrigger>
+                <TabsTrigger value="executions" className="text-xs">Executions</TabsTrigger>
+            </TabsList>
+        </Tabs>
     )
 };
 
