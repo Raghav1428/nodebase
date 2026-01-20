@@ -112,6 +112,7 @@ function onEdit(e) {
   
   // Get row data
   var row = range.getRow();
+  var columnIndex = range.getColumn();
   var lastCol = sheet.getLastColumn();
   var rowData = {};
   var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];

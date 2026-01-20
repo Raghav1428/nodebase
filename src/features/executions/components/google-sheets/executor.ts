@@ -82,8 +82,14 @@ export const googleSheetsExecutor: NodeExecutor<GoogleSheetsNodeData> = async ({
             }
 
             if (typeof rawData === "string") {
+                let stringData: string = rawData;
+                // Check if the string contains markdown code fences
+                const codeBlockMatch = stringData.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+                if (codeBlockMatch) {
+                    stringData = codeBlockMatch[1].trim();
+                }
                 try {
-                    const parsed = JSON.parse(rawData);
+                    const parsed = JSON.parse(stringData);
                     if (typeof parsed === "object" || Array.isArray(parsed)) {
                         rawData = parsed;
                     }
