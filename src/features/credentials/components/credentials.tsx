@@ -88,7 +88,7 @@ export const CredentialsContainerSkeleton = () => {
     return (
         <EntityContainer
             header={<CredentialsHeader disabled />}
-            search={<Skeleton className="h-10 w-full max-w-sm" />}
+            search={<Skeleton className="h-10 w-[200px] ml-auto" />}
         >
             <CredentialsLoading />
         </EntityContainer>
