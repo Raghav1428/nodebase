@@ -26,7 +26,7 @@ const Page = async ( { params }: PageProps) => {
                 <Suspense fallback={<EditorLoading/>}>
                     <EditorHeader workflowId={workflowId} />
                     <main className="flex-1 relative">
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[100]">
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[10]">
                             <ViewModeSelector />
                         </div>
                         <WorkflowEditor workflowId={workflowId}/>

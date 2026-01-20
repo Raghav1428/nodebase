@@ -72,7 +72,7 @@ export const useUpdateWorkflowName = () => {
         onSuccess: (data) => {
             toast.success(`Workflow "${data.name}" updated`);
             queryClient.invalidateQueries(trpc.workflows.getMany.queryOptions({}));
-            queryClient.invalidateQueries(trpc.workflows.getOne.queryOptions({ id: data.id}));
+            queryClient.invalidateQueries(trpc.workflows.getOne.queryOptions({ id: data.id }));
 
         },
         onError: (error) => {
@@ -92,7 +92,7 @@ export const useUpdateWorkflow = () => {
         onSuccess: (data) => {
             toast.success(`Workflow "${data.name}" saved`);
             queryClient.invalidateQueries(trpc.workflows.getMany.queryOptions({}));
-            queryClient.invalidateQueries(trpc.workflows.getOne.queryOptions({ id: data.id}));
+            queryClient.invalidateQueries(trpc.workflows.getOne.queryOptions({ id: data.id }));
 
         },
         onError: (error) => {
@@ -106,11 +106,12 @@ export const useUpdateWorkflow = () => {
  */
 export const useExecuteWorkflow = () => {
     const trpc = useTRPC();
+    const queryClient = useQueryClient();
 
     return useMutation(trpc.workflows.execute.mutationOptions({
         onSuccess: (data) => {
             toast.success(`Workflow "${data.name}" executed`);
-
+            queryClient.invalidateQueries(trpc.executions.getMany.queryFilter({}));
         },
         onError: (error) => {
             toast.error(`Failed to execute workflow ${error.message}`)
