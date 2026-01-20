@@ -5,11 +5,14 @@ import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 /**
  * Hook to fetch executions using suspense
  */
-export const useSuspenseExecutions = () => {
+export const useSuspenseExecutions = (workflowId?: string) => {
     const trpc = useTRPC();
     const [params] = useExecutionParams();
 
-    return useSuspenseQuery(trpc.executions.getMany.queryOptions(params));
+    return useSuspenseQuery(trpc.executions.getMany.queryOptions({
+        ...params,
+        workflowId: workflowId ?? params.workflowId ?? undefined
+    }));
 }
 
 /**

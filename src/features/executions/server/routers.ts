@@ -32,10 +32,11 @@ export const executionsRouter = createTRPCRouter({
             z.object({
                 page: z.number().default(PAGINATION.DEFAULT_PAGE),
                 pageSize: z.number().min(PAGINATION.MIN_PAGE_SIZE).max(PAGINATION.MAX_PAGE_SIZE).default(PAGINATION.DEFAULT_PAGE_SIZE),
+                workflowId: z.string().optional(),
             })
         )
         .query(async ({ ctx, input }) => {
-            const { page, pageSize } = input;
+            const { page, pageSize, workflowId } = input;
 
             const [items, totalCount] = await Promise.all([
                 prisma.execution.findMany({
@@ -44,6 +45,7 @@ export const executionsRouter = createTRPCRouter({
                     where: {
                         workflow: {
                             userId: ctx.auth.user.id,
+                            id: workflowId,
                         },
                     },
                     orderBy: {
@@ -62,6 +64,7 @@ export const executionsRouter = createTRPCRouter({
                     where: {
                         workflow: {
                             userId: ctx.auth.user.id,
+                            id: workflowId,
                         },
                     },
                 }),

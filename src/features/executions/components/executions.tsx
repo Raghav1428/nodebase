@@ -7,8 +7,8 @@ import { useSuspenseExecutions } from "../hooks/use-executions";
 import { useExecutionParams } from "../hooks/use-execution-params";
 import { CheckCircle2Icon, ClockIcon, Loader2Icon, XCircleIcon } from "lucide-react";
 
-export const ExecutionsList = () => {
-    const executions = useSuspenseExecutions();
+export const ExecutionsList = ({ workflowId }: { workflowId?: string }) => {
+    const executions = useSuspenseExecutions(workflowId);
 
     return (
         <EntityList 
@@ -30,8 +30,8 @@ export const ExecutionsHeader = () => {
     )
 }
 
-export const ExecutionsPagination = () => {
-    const executions = useSuspenseExecutions();
+export const ExecutionsPagination = ({ workflowId }: { workflowId?: string }) => {
+    const executions = useSuspenseExecutions(workflowId);
     const [params, setParams] = useExecutionParams();
     return (
         <EntityPagination
@@ -43,11 +43,11 @@ export const ExecutionsPagination = () => {
     );
 };
 
-export const ExecutionsContainer = ({children}: {children: React.ReactNode}) => {
+export const ExecutionsContainer = ({children, workflowId}: {children: React.ReactNode, workflowId?: string}) => {
     return (
         <EntityContainer
             header={<ExecutionsHeader/>}
-            pagination={<ExecutionsPagination/>}
+            pagination={<ExecutionsPagination workflowId={workflowId}/>}
         >
             {children}
         </EntityContainer>
