@@ -1,7 +1,9 @@
 "use client";
 
 import { formatDistanceToNow } from "date-fns";
-import { EmptyView, EntityContainer, EntityHeader, EntityItem, EntityList, EntityPagination, EntitySearch, ErrorView, LoadingView } from "@/components/entity-components";
+import { EmptyView, EntityContainer, EntityHeader, EntityItem, EntityList, EntityPagination, EntitySearch, ErrorView, LoadingView, EntityListSkeleton } from "@/components/entity-components";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import { useCredentialParams } from "../hooks/use-credential-params";
 import { useEntitySearch } from "../hooks/use-entity-search";
@@ -79,7 +81,47 @@ export const CredentialsContainer = ({children}: {children: React.ReactNode}) =>
 }
 
 export const CredentialsLoading = () => {
-    return <LoadingView message="Loading credentials..."/>
+    return <EntityListSkeleton />
+}
+
+export const CredentialsContainerSkeleton = () => {
+    return (
+        <EntityContainer
+            header={<CredentialsHeader disabled />}
+            search={<CredentialsSearch />}
+        >
+            <CredentialsLoading />
+        </EntityContainer>
+    )
+}
+
+export const CredentialSkeleton = () => {
+    return (
+        <Card>
+            <CardHeader>
+                <Skeleton className="h-6 w-48 mb-2" />
+                <Skeleton className="h-4 w-96" />
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2">
+                     <Skeleton className="h-4 w-16" />
+                     <Skeleton className="h-10 w-full" />
+                </div>
+                 <div className="flex gap-4 pt-2">
+                    <Skeleton className="h-10 w-20" />
+                    <Skeleton className="h-10 w-20" />
+                </div>
+            </CardContent>
+        </Card>
+    )
 }
 
 export const CredentialsError = () => {
