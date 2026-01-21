@@ -15,7 +15,7 @@ export const ExecuteWorkflowButton = ({
     };
 
     return (
-        <Button size="lg" onClick={handleExecute} disabled={executeWorkflow.isPending}>
+        <Button size="lg" onClick={handleExecute} disabled={executeWorkflow.isPending} id="execute-workflow-button">
             <FlaskConicalIcon className="size-4" />
             Execute Workflow
             {executeWorkflow.isPending && <Loader2Icon className="size-4 animate-spin" />}

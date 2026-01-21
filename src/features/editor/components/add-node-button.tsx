@@ -15,6 +15,7 @@ export const AddNodeButton = memo(() => {
             size="icon"
             variant="outline"
             className="bg-background"
+            data-onboarding="add-node-button"
         >
             <PlusIcon />
         </Button>

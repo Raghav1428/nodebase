@@ -1,5 +1,4 @@
-import { AppSideBar } from "@/components/app-sidebar";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { DashboardClientLayout } from "./DashboardClientLayout";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -10,15 +9,12 @@ export const metadata: Metadata = {
   },
 };
 
-const Layout = ( {children}: {children: React.ReactNode; }) => {
-    return(
-        <SidebarProvider>
-            <AppSideBar />
-            <SidebarInset className="bg-accent/20">
-                {children}
-            </SidebarInset>
-        </SidebarProvider>
-    )
-}
+const Layout = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <DashboardClientLayout>
+      {children}
+    </DashboardClientLayout>
+  );
+};
 
 export default Layout;

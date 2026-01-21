@@ -16,7 +16,7 @@ const Page = async ({ searchParams }: Props) => {
     await requireAuth();
 
     const params = await executionParamsLoader(searchParams);
-    prefetchExecutions({
+    await prefetchExecutions({
         ...params,
         workflowId: undefined
     });

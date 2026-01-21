@@ -29,14 +29,16 @@ export function WorkflowNode({
         <>
             {showToolbar && (
                 <NodeToolbar>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button size="sm" variant="ghost" onClick={onSettings}>
-                                <SettingsIcon className="size-4" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Node Settings</TooltipContent>
-                    </Tooltip>
+                    {onSettings && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button size="sm" variant="ghost" onClick={onSettings} data-onboarding="node-settings-trigger">
+                                    <SettingsIcon className="size-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Node Settings</TooltipContent>
+                        </Tooltip>
+                    )}
                     {onTest && (
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -47,14 +49,16 @@ export function WorkflowNode({
                             <TooltipContent>Test Node</TooltipContent>
                         </Tooltip>
                     )}
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button size="sm" variant="ghost" onClick={onDelete}>
-                                <TrashIcon className="size-4 text-red-500" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Delete Node</TooltipContent>
-                    </Tooltip>
+                    {onDelete && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button size="sm" variant="ghost" onClick={onDelete}>
+                                    <TrashIcon className="size-4 text-red-500" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Delete Node</TooltipContent>
+                        </Tooltip>
+                    )}                
                 </NodeToolbar>
             )}
             {children}

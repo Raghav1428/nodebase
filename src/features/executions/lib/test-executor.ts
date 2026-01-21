@@ -107,14 +107,15 @@ export async function executeNodeForTest(params: TestNodeParams): Promise<TestNo
 
         // Execute the node
         const result = await executor({
-            data: node.data as Record<string, unknown>,
+            data: (node.data && typeof node.data === 'object' && !Array.isArray(node.data))
+                ? (node.data as Record<string, unknown>)
+                : {},
             nodeId: node.id,
             userId,
             context: mockContext,
             step,
             publish,
         });
-
         return {
             success: true,
             output: result,

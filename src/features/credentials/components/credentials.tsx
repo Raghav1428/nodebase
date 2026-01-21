@@ -45,13 +45,16 @@ export const CredentialsList = () => {
 export const CredentialsHeader = ({ disabled }: {disabled?: boolean}) => {
 
     return (
-        <EntityHeader 
-            title="Credentials"
-            description="Create and manage your credentials"
-            newButtonHref="/credentials/new"
-            newButtonLabel="New credential"
-            disabled={disabled}
-        />
+        <div data-onboarding="credentials-header">
+            <EntityHeader 
+                title="Credentials"
+                description="Create and manage your credentials"
+                newButtonHref="/credentials/new"
+                newButtonLabel="New credential"
+                disabled={disabled}
+                buttonDataOnboarding="credentials-new-button"
+            />
+        </div>
     )
 }
 
@@ -74,6 +77,7 @@ export const CredentialsContainer = ({children}: {children: React.ReactNode}) =>
             header={<CredentialsHeader/>}
             search={<CredentialsSearch/>}
             pagination={<CredentialsPagination/>}
+            containerDataOnboarding="credentials-container"
         >
             {children}
         </EntityContainer>

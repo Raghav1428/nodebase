@@ -20,6 +20,7 @@ export const InitialNode = memo((props: NodeProps) => {
                 <PlaceholderNode 
                     {...props}
                     onClick={() => setSelectorOpen(true)}
+                    data-onboarding="initial-node"
                 >
                     <div className="cursor-pointer flex items-center justify-center">
                         <PlusIcon className="size-4" />

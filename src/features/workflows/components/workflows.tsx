@@ -2,9 +2,8 @@
 
 import { formatDistanceToNow } from "date-fns";
 import { useCreateWorkflow, useRemoveWorkflow, useSuspenseWorkflows } from "../hooks/use-workflows"
-import { EmptyView, EntityContainer, EntityHeader, EntityItem, EntityList, EntityPagination, EntitySearch, ErrorView, LoadingView, EntityListSkeleton } from "@/components/entity-components";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useUpgradeModal } from "@/hooks/use-upgrade-modal";
+import { EmptyView, EntityContainer, EntityHeader, EntityItem, EntityList, EntityPagination, EntitySearch, ErrorView, EntityListSkeleton } from "@/components/entity-components";
+import { Skeleton } from "@/components/ui/skeleton";import { useUpgradeModal } from "@/hooks/use-upgrade-modal";
 import { useRouter } from "next/navigation";
 import { useWorkflowParams } from "../hooks/use-workflow-params";
 import { useEntitySearch } from "../hooks/use-entity-search";
@@ -59,7 +58,7 @@ export const WorkflowsHeader = ({ disabled }: {disabled?: boolean}) => {
     }
 
     return (
-        <>
+        <div data-onboarding="workflows-header">
             {modal}
             <EntityHeader 
                 title="Workflows"
@@ -68,8 +67,9 @@ export const WorkflowsHeader = ({ disabled }: {disabled?: boolean}) => {
                 newButtonLabel="New workflow"
                 disabled={disabled}
                 isCreating={createWorkflow.isPending}
+                buttonDataOnboarding="workflows-new-button"
             />
-        </>
+        </div>
     )
 }
 
@@ -92,6 +92,7 @@ export const WorkflowsContainer = ({children}: {children: React.ReactNode}) => {
             header={<WorkflowsHeader/>}
             search={<WorkflowsSearch/>}
             pagination={<WorkflowsPagination/>}
+            containerDataOnboarding="workflows-container"
         >
             {children}
         </EntityContainer>

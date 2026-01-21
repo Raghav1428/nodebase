@@ -70,7 +70,7 @@ function buildContextFromVariables(
 
         let current: Record<string, unknown> = context;
         for (let i = 0; i < parts.length - 1; i++) {
-            if (!current[parts[i]]) {
+            if (!current[parts[i]] || typeof current[parts[i]] !== "object") {
                 current[parts[i]] = {};
             }
             current = current[parts[i]] as Record<string, unknown>;
@@ -172,12 +172,16 @@ export const TestNodeDialog = ({
 
     const handleCopyOutput = async () => {
         if (executionResult.output) {
-            await navigator.clipboard.writeText(executionResult.output);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
+            try {
+                await navigator.clipboard.writeText(executionResult.output);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            } catch {
+                // Clipboard access denied or not supported
+                console.error("Failed to copy to clipboard");
+            }
         }
     };
-
     const isRunning = executionResult.status === "running" || executeNode.isPending;
 
     return (

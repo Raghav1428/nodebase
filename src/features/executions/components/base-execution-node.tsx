@@ -36,7 +36,8 @@ export const BaseExecutionNode = memo(
         onSettings,
         onDoubleClick,
         nodeData = {},
-    }: BaseExecutionNodeProps) => {
+        dataOnboarding,
+    }: BaseExecutionNodeProps & { dataOnboarding?: string }) => {
 
         const params = useParams();
         const workflowId = params.workflowId as string | undefined;
@@ -84,6 +85,7 @@ export const BaseExecutionNode = memo(
                     onDelete={handleDelete}
                     onSettings={onSettings}
                     onTest={handleTest}
+                    data-onboarding={dataOnboarding}
                 >
                     <NodeStatusIndicator
                         status={status}
@@ -101,11 +103,13 @@ export const BaseExecutionNode = memo(
                                     id="target-1"
                                     type="target"
                                     position={Position.Left}
+                                    data-onboarding={dataOnboarding ? `${dataOnboarding}-target-handle` : undefined}
                                 />
                                 <BaseHandle 
                                     id="source-1"
                                     type="source"
                                     position={Position.Right}
+                                    data-onboarding={dataOnboarding ? `${dataOnboarding}-source-handle` : undefined}
                                 />
                             </BaseNodeContent>
                         </BaseNode>

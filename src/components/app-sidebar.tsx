@@ -45,17 +45,20 @@ const menuItems = [
             {
                 title: "Workflows",
                 icon: FolderOpenIcon,
-                url: "/workflows"
+                url: "/workflows",
+                onboardingId: "nav-workflows",
             },
             {
                 title: "Credentials",
                 icon: KeyIcon,
-                url: "/credentials"
+                url: "/credentials",
+                onboardingId: "nav-credentials",
             },
             {
                 title: "Executions",
                 icon: HistoryIcon,
-                url: "/executions"
+                url: "/executions",
+                onboardingId: "nav-executions",
             },
         ]
     }
@@ -85,7 +88,7 @@ export const AppSideBar = () => {
     };
 
     return (
-        <Sidebar collapsible="icon">
+        <Sidebar collapsible="icon" data-onboarding="sidebar-container">
             <SidebarHeader>
                 <SidebarMenuItem>
                     <SidebarMenuButton asChild className="gap-x-4 h-10 px-4">
@@ -102,7 +105,10 @@ export const AppSideBar = () => {
                         <SidebarGroupContent>
                             <SidebarMenu>
                                 {group.items.map((item) => (
-                                    <SidebarMenuItem key={item.title}>
+                                    <SidebarMenuItem 
+                                        key={item.title}
+                                        data-onboarding={item.onboardingId}
+                                    >
                                         <SidebarMenuButton
                                             tooltip={item.title}
                                             isActive={
