@@ -106,6 +106,8 @@ export interface OnboardingState {
   isLoading: boolean;
   /** Whether initial status has been fetched from DB */
   isInitialized: boolean;
+  /** Whether a feature is currently starting (async guard) */
+  isStarting?: boolean;
 }
 
 export interface OnboardingActions {

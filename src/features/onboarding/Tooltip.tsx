@@ -137,6 +137,9 @@ function calculatePosition(
         if(newTop > 16) {
             top = newTop;
             actualPlacement = placement.replace('bottom', 'top') as TooltipPlacement;
+        } else {
+            // Fallback: Clamp vertical position if flip fails
+            top = Math.max(16, viewport.height - tooltipHeight - 16);
         }
      }
   }
@@ -202,12 +205,8 @@ export function Tooltip({
     }
   }, [rect, step, tooltipHeight]);
 
-  if (!isVisible || !step) {
-    return null;
-  }
-
   const isLastStep = progress.current === progress.total;
-  const buttonLabel = step.actionLabel
+  const buttonLabel = step?.actionLabel
     ? step.actionLabel
     : isLastStep 
       ? 'Done' 
@@ -215,8 +214,10 @@ export function Tooltip({
 
   return (
     <AnimatePresence>
+      {isVisible && step && (
       <motion.div
         ref={tooltipRef}
+        key={step.id}
         initial={{ opacity: 0, y: 10, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -10, scale: 0.95 }}
@@ -302,6 +303,7 @@ export function Tooltip({
           )}
         </div>
       </motion.div>
+      )}
     </AnimatePresence>
   );
 }

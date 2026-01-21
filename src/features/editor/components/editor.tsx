@@ -64,7 +64,7 @@ export const EditorSkeleton = () => {
                  
                  {/* Center - View Mode Selector Mock */}
                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[10]">
-                    <Skeleton className="h-9 w-46 border shadow-sm" />
+                    <Skeleton className="h-9 w-44 border shadow-sm" />
                  </div>
             </div>
         </div>

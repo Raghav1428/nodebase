@@ -65,7 +65,14 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
     // Start Feature
     // --------------------------------------------------------------------------
     startFeature: async (featureId: string) => {
-        const { status } = get();
+        const { status, activeFeature, isStarting } = get();
+
+        // 1. Guard: Check if already processing a start or if a feature is already active
+        if (isStarting || activeFeature) {
+            console.log(`[Onboarding] Start ignored: ${isStarting ? 'already starting' : 'feature active'}`);
+            return;
+        }
+
         const feature = getFeature(featureId);
 
         if (!feature) {
@@ -73,63 +80,76 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
             return;
         }
 
-        // Check if already completed or skipped
-        const featureState = status.features[featureId];
-        if (featureState?.status === 'completed' || featureState?.status === 'skipped') {
-            console.warn(`[Onboarding] Feature "${featureId}" already ${featureState.status}`);
-            return;
-        }
+        // Lock execution
+        set({ isStarting: true });
 
-        // Check dependencies
-        const completedFeatures = Object.entries(status.features)
-            .filter(([, state]) => state.status === 'completed')
-            .map(([id]) => id);
-
-        if (!areDependenciesMet(featureId, completedFeatures)) {
-            console.warn(`[Onboarding] Dependencies not met for "${featureId}"`);
-            return;
-        }
-
-        // Check dynamic blocker
-        if (feature.dynamicBlocker) {
-            const blockedBy = await feature.dynamicBlocker();
-            if (blockedBy) {
-                set((state) => ({
-                    status: {
-                        ...state.status,
-                        features: {
-                            ...state.status.features,
-                            [featureId]: { status: 'blocked', blockedBy },
-                        },
-                    },
-                }));
+        try {
+            // Check if already completed or skipped
+            const featureState = status.features[featureId];
+            if (featureState?.status === 'completed' || featureState?.status === 'skipped') {
+                console.warn(`[Onboarding] Feature "${featureId}" already ${featureState.status}`);
+                set({ isStarting: false });
                 return;
             }
-        }
 
-        // Start the feature
-        const startStepIndex = featureState?.stepIndex ?? 0;
+            // Check dependencies
+            const completedFeatures = Object.entries(status.features)
+                .filter(([, state]) => state.status === 'completed')
+                .map(([id]) => id);
 
-        set((state) => ({
-            activeFeature: featureId,
-            currentStepIndex: startStepIndex,
-            isPaused: false,
-            status: {
-                ...state.status,
-                features: {
-                    ...state.status.features,
-                    [featureId]: {
-                        status: 'in_progress',
-                        step: feature.steps[startStepIndex]?.id,
-                        stepIndex: startStepIndex,
+            if (!areDependenciesMet(featureId, completedFeatures)) {
+                console.warn(`[Onboarding] Dependencies not met for "${featureId}"`);
+                set({ isStarting: false });
+                return;
+            }
+
+            // Check dynamic blocker
+            if (feature.dynamicBlocker) {
+                const blockedBy = await feature.dynamicBlocker();
+                if (blockedBy) {
+                    set((state) => ({
+                        isStarting: false,
+                        status: {
+                            ...state.status,
+                            features: {
+                                ...state.status.features,
+                                [featureId]: { status: 'blocked', blockedBy },
+                            },
+                        },
+                    }));
+                    return;
+                }
+            }
+
+            // Start the feature
+            const startStepIndex = featureState?.stepIndex ?? 0;
+
+            set((state) => ({
+                activeFeature: featureId,
+                currentStepIndex: startStepIndex,
+                isPaused: false,
+                isStarting: false, // Release lock
+                status: {
+                    ...state.status,
+                    features: {
+                        ...state.status.features,
+                        [featureId]: {
+                            status: 'in_progress',
+                            step: feature.steps[startStepIndex]?.id,
+                            stepIndex: startStepIndex,
+                        },
                     },
+                    paused: undefined, // Clear paused state
                 },
-                paused: undefined,
-            },
-        }));
+            }));
 
-        // Sync to DB
-        get().syncToDb();
+            // Sync to DB
+            get().syncToDb();
+
+        } catch (error) {
+            console.error('[Onboarding] startFeature failed:', error);
+            set({ isStarting: false });
+        }
     },
 
     // --------------------------------------------------------------------------
@@ -147,9 +167,12 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
 
         // Execute onNext callback if present
         if (currentStep?.onNext) {
-            currentStep.onNext();
+            try {
+                currentStep.onNext();
+            } catch (error) {
+                console.error(`[Onboarding] onNext callback failed for step "${currentStep.id}":`, error);
+            }
         }
-
         const nextIndex = currentStepIndex + 1;
 
         // Check if we've completed all steps

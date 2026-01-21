@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import {
     useOnboardingStore,
     useCurrentStep,
@@ -54,13 +54,19 @@ export function useOnboarding(): UseOnboardingReturn {
         }
     }, [statusQuery.data, store.isInitialized]);
 
+    // Use ref to hold mutation for stable syncToDb override
+    const updateMutationRef = useRef(updateMutation);
+    useEffect(() => {
+        updateMutationRef.current = updateMutation;
+    }, [updateMutation]);
+
     // Override syncToDb to use TRPC mutation
     useEffect(() => {
         const originalSync = store.syncToDb;
         store.syncToDb = async () => {
             const { status } = useOnboardingStore.getState();
             try {
-                await updateMutation.mutateAsync(status);
+                await updateMutationRef.current.mutateAsync(status);
             } catch (error) {
                 console.error('[Onboarding] Failed to sync to DB:', error);
             }
@@ -69,8 +75,7 @@ export function useOnboarding(): UseOnboardingReturn {
         return () => {
             store.syncToDb = originalSync;
         };
-    }, [updateMutation]);
-
+    }, [store]);
     // Derived: canStartFeature
     const canStartFeature = useCallback((featureId: string): boolean => {
         const feature = getFeature(featureId);

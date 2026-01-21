@@ -33,34 +33,85 @@ const DEFAULT_OPTIONS: UseTargetRectOptions = {
     padding: 8,
 };
 
+interface Cancelable {
+    cancel: () => void;
+}
+
 /**
- * Simple debounce function
+ * Simple debounce function with cancel
  */
 function debounce<T extends (...args: unknown[]) => void>(
     fn: T,
     delay: number
-): (...args: Parameters<T>) => void {
+): ((...args: Parameters<T>) => void) & Cancelable {
     let timeoutId: ReturnType<typeof setTimeout>;
-    return (...args: Parameters<T>) => {
+
+    const debounced = (...args: Parameters<T>) => {
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => fn(...args), delay);
     };
+
+    debounced.cancel = () => {
+        clearTimeout(timeoutId);
+    };
+
+    return debounced;
 }
 
 /**
- * Simple throttle function using RAF
+ * Simple throttle function using RAF with cancel
  */
 function throttleRAF<T extends (...args: unknown[]) => void>(
-    fn: T
-): (...args: Parameters<T>) => void {
+    fn: T,
+    waitMs?: number
+): ((...args: Parameters<T>) => void) & Cancelable {
     let rafId: number | null = null;
-    return (...args: Parameters<T>) => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let lastRun = 0;
+
+    const throttled = (...args: Parameters<T>) => {
+        // Time-based throttle
+        if (typeof waitMs === 'number' && waitMs > 0) {
+            const now = Date.now();
+            const remaining = waitMs - (now - lastRun);
+
+            if (remaining <= 0) {
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    timeoutId = null;
+                }
+                fn(...args);
+                lastRun = now;
+            } else if (!timeoutId) {
+                timeoutId = setTimeout(() => {
+                    fn(...args);
+                    lastRun = Date.now();
+                    timeoutId = null;
+                }, remaining);
+            }
+            return;
+        }
+
+        // RAF-based throttle (default)
         if (rafId !== null) return;
         rafId = requestAnimationFrame(() => {
             fn(...args);
             rafId = null;
         });
     };
+
+    throttled.cancel = () => {
+        if (rafId !== null) {
+            cancelAnimationFrame(rafId);
+            rafId = null;
+        }
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+        }
+    };
+
+    return throttled;
 }
 
 export function useTargetRect(
@@ -142,7 +193,7 @@ export function useTargetRect(
 
         // Set up event listeners
         const debouncedResize = debounce(updateRect, opts.resizeDebounce ?? 150);
-        const throttledScroll = throttleRAF(updateRect);
+        const throttledScroll = throttleRAF(updateRect, opts.scrollThrottle);
 
         window.addEventListener('resize', debouncedResize);
         window.addEventListener('scroll', throttledScroll, { passive: true });
@@ -176,10 +227,16 @@ export function useTargetRect(
             clearTimeout(pollTimeout);
             window.removeEventListener('resize', debouncedResize);
             window.removeEventListener('scroll', throttledScroll);
+
+            // Cancel pending debounced/throttled calls
+            debouncedResize.cancel();
+            throttledScroll.cancel();
+            debouncedMutation.cancel();
+
             observerRef.current?.disconnect();
             mutationObserver.disconnect();
         };
-    }, [selector, updateRect, opts.resizeDebounce]);
+    }, [selector, updateRect, opts.resizeDebounce, opts.scrollThrottle]);
 
     return rect;
 }
