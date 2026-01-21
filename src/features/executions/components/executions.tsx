@@ -16,7 +16,11 @@ export const ExecutionsList = ({ workflowId }: { workflowId?: string }) => {
         <EntityList 
             items={executions.data.items}
             getKey={(execution) => execution.id}
-            renderItem={(execution) => <ExecutionsItem data={execution}/>}
+            renderItem={(execution, index) => (
+                <div data-onboarding={index === 0 ? "first-execution-row" : undefined}>
+                    <ExecutionsItem data={execution}/>
+                </div>
+            )}
             emptyView={<ExecutionsEmpty/>}
         />
     )
@@ -25,10 +29,12 @@ export const ExecutionsList = ({ workflowId }: { workflowId?: string }) => {
 export const ExecutionsHeader = () => {
 
     return (
-        <EntityHeader 
-            title="Executions"
-            description="View your workflow execution history"
-        />
+        <div data-onboarding="executions-header">
+            <EntityHeader 
+                title="Executions"
+                description="View your workflow execution history"
+            />
+        </div>
     )
 }
 
@@ -50,6 +56,7 @@ export const ExecutionsContainer = ({children, workflowId}: {children: React.Rea
         <EntityContainer
             header={<ExecutionsHeader/>}
             pagination={<ExecutionsPagination workflowId={workflowId}/>}
+            containerDataOnboarding="executions-container"
         >
             {children}
         </EntityContainer>
@@ -57,7 +64,7 @@ export const ExecutionsContainer = ({children, workflowId}: {children: React.Rea
 }
 
 export const ExecutionsLoading = () => {
-    return <EntityListSkeleton />
+    return <EntityListSkeleton firstItemOnboardingId="first-execution-row" />
 }
 
 export const ExecutionsContainerSkeleton = () => {

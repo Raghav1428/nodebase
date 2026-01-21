@@ -229,6 +229,8 @@ function NodeItem({ nodeType, onClick }: { nodeType: NodeTypeOption, onClick: ()
         <div
             className="w-full justify-start h-auto py-4 px-4 rounded-none cursor-pointer border-l-2 border-transparent hover:border-l-primary hover:bg-muted/50 transition-colors"
             onClick={onClick}
+            data-onboarding-type={nodeType.type}
+            id={`node-item-${nodeType.type}`}
         >
             <div className="flex items-center gap-4 w-full overflow-hidden">
                 {typeof Icon === "string" ? (

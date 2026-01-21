@@ -172,7 +172,7 @@ export const Editor = ({ workflowId }: { workflowId: string }) => {
                     <AddNodeButton />
                 </Panel>
                 {hasManualTrigger && (
-                    <Panel position="bottom-center">
+                    <Panel position="bottom-center" data-onboarding="execute-panel" className="p-2">
                         <ExecuteWorkflowButton workflowId={workflowId} />
                     </Panel>
                 )}

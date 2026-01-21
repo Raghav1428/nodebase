@@ -34,6 +34,7 @@ export const ManualTriggerNode = memo((props: NodeProps) => {
                 status={nodeStatus} 
                 onSettings={handleOpenSettings}
                 onDoubleClick={handleOpenSettings}
+                dataOnboarding="manual-trigger-node"
             />
         </>
     )

@@ -30,7 +30,8 @@ export const BaseTriggerNode = memo(
         status = "initial",
         onSettings,
         onDoubleClick,
-    }: BaseTriggerNodeProps) => {
+        dataOnboarding,
+    }: BaseTriggerNodeProps & { dataOnboarding?: string }) => {
 
         const { setNodes, setEdges } = useReactFlow();
 
@@ -53,6 +54,7 @@ export const BaseTriggerNode = memo(
                 description={description}
                 onDelete={handleDelete}
                 onSettings={onSettings}
+                data-onboarding={dataOnboarding}
             >
                 <NodeStatusIndicator status={status} variant="border" className="rounded-l-2xl">
                     <BaseNode status={status} onDoubleClick={onDoubleClick} className="rounded-l-2xl relative group">
@@ -67,6 +69,7 @@ export const BaseTriggerNode = memo(
                                 id="source-1"
                                 type="source"
                                 position={Position.Right}
+                                data-onboarding={dataOnboarding ? `${dataOnboarding}-source-handle` : undefined}
                             />
                         </BaseNodeContent>
                     </BaseNode>

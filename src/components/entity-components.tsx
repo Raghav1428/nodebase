@@ -14,6 +14,7 @@ type EntityHeaderProps = {
     newButtonLabel?: string;
     disabled?: boolean;
     isCreating?: boolean;
+    buttonDataOnboarding?: string;
 } & (
     | { onNew: () => void; newButtonHref?: never }
     | { newButtonHref: string; onNew?: never }
@@ -28,6 +29,7 @@ export const EntityHeader = ({
     newButtonLabel,
     disabled,
     isCreating,
+    buttonDataOnboarding,
 }: EntityHeaderProps) => {
     return (
         <div className="flex flex-row items-center justify-between gap-x-4">
@@ -44,6 +46,7 @@ export const EntityHeader = ({
                     disabled={ isCreating ||  disabled }
                     size="sm"
                     onClick={onNew}
+                    data-onboarding={buttonDataOnboarding}
                 >
                     <PlusIcon className="size-4"/>
                     {newButtonLabel}
@@ -53,6 +56,7 @@ export const EntityHeader = ({
                 <Button 
                     size="sm"
                     asChild
+                    data-onboarding={buttonDataOnboarding}
                 >
                     <Link href={newButtonHref} prefetch> 
                         <PlusIcon className="size-4"/>
@@ -68,13 +72,14 @@ type EntityContainerProps = {
     children: React.ReactNode
     header: React.ReactNode;
     search?: React.ReactNode;
-    pagination?: React.ReactNode
+    pagination?: React.ReactNode;
+    containerDataOnboarding?: string;
 }
 
 
-export const EntityContainer = ({ children, header, search, pagination }: EntityContainerProps) => {
+export const EntityContainer = ({ children, header, search, pagination, containerDataOnboarding }: EntityContainerProps) => {
     return (
-        <div  className="p-4 md:px-10 md:py-6 h-full">
+        <div data-onboarding={containerDataOnboarding} className="p-4 md:px-10 md:py-6 h-full">
             <div className="mx-auto max-w-screen-xl w-full flex flex-col gap-y-8 h-full">
                 {header}
                 <div className="flex flex-col gap-y-4 h-full">
@@ -331,11 +336,11 @@ export const EntityItem = ({
     )
 };
 
-export const EntityListSkeleton = () => {
+export const EntityListSkeleton = ({ firstItemOnboardingId }: { firstItemOnboardingId?: string }) => {
     return (
         <div className="flex flex-col gap-y-4">
              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i}>
+                <div key={i} data-onboarding={i === 0 ? firstItemOnboardingId : undefined}>
                     <Card className="p-4 shadow-none">
                         <CardContent className="flex flex-row items-center justify-between p-0">
                             <div className="flex items-center gap-3">

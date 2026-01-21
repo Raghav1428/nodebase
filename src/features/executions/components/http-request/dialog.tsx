@@ -51,6 +51,8 @@ interface Props {
     defaultValues?: Partial<HttpRequestFormValues>;
 }
 
+import { useOnboardingStore, useCurrentStep } from "@/features/onboarding/engine";
+
 export const HttpRequestDialog = ({
     open,
     onOpenChange,
@@ -67,6 +69,18 @@ export const HttpRequestDialog = ({
             body: defaultValues.body || '',
         },
     });
+
+    // Auto-advance onboarding if dialog is opened manually (or via double-click)
+    const currentStep = useCurrentStep();
+    const goToStep = useOnboardingStore((state) => state.goToStep);
+
+    useEffect(() => {
+        if (open && currentStep) {
+            if (currentStep.id === 'select-node' || currentStep.id === 'click-settings') {
+                goToStep('edit-settings');
+            }
+        }
+    }, [open, currentStep?.id, goToStep]);
 
     useEffect(() => {
         if (open) {
@@ -99,7 +113,7 @@ export const HttpRequestDialog = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange} >
-            <DialogContent>
+            <DialogContent data-onboarding="node-settings-dialog">
                 <DialogHeader>
                     <DialogTitle>
                         HTTP Request
@@ -227,7 +241,7 @@ export const HttpRequestDialog = ({
                             />
                         )}
                         <DialogFooter className="mt-4">
-                            <Button type="submit">Save</Button>
+                            <Button type="submit" id="node-settings-save-button">Save</Button>
                         </DialogFooter>
                     </form>
                 </Form>

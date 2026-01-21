@@ -59,7 +59,7 @@ export const WorkflowsHeader = ({ disabled }: {disabled?: boolean}) => {
     }
 
     return (
-        <>
+        <div data-onboarding="workflows-header">
             {modal}
             <EntityHeader 
                 title="Workflows"
@@ -68,8 +68,9 @@ export const WorkflowsHeader = ({ disabled }: {disabled?: boolean}) => {
                 newButtonLabel="New workflow"
                 disabled={disabled}
                 isCreating={createWorkflow.isPending}
+                buttonDataOnboarding="workflows-new-button"
             />
-        </>
+        </div>
     )
 }
 
@@ -92,6 +93,7 @@ export const WorkflowsContainer = ({children}: {children: React.ReactNode}) => {
             header={<WorkflowsHeader/>}
             search={<WorkflowsSearch/>}
             pagination={<WorkflowsPagination/>}
+            containerDataOnboarding="workflows-container"
         >
             {children}
         </EntityContainer>

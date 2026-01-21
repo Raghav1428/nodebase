@@ -31,7 +31,7 @@ export function WorkflowNode({
                 <NodeToolbar>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button size="sm" variant="ghost" onClick={onSettings}>
+                            <Button size="sm" variant="ghost" onClick={onSettings} data-onboarding="node-settings-trigger">
                                 <SettingsIcon className="size-4" />
                             </Button>
                         </TooltipTrigger>
