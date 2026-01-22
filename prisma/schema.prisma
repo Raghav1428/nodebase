@@ -153,6 +153,7 @@ enum CredentialType {
   EMAIL_SMTP
   EMAIL_GMAIL
   GOOGLE_SHEETS
+  STRIPE
 }
 
 enum NodeType {

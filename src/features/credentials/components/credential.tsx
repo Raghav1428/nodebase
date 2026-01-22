@@ -81,6 +81,11 @@ const credentialTypeOptions = [
         label: "Google Sheets",
         logo: "/logos/google.svg",
         isOAuth: true
+    },
+    {
+        value: CredentialType.STRIPE,
+        label: "Stripe",
+        logo: "/logos/stripe.svg"
     }
 ]
 
@@ -92,6 +97,8 @@ const getNameHelperText = (type: CredentialType) => {
             return "Your Gmail address (e.g., you@gmail.com)";
         case CredentialType.EMAIL_SMTP:
             return "A friendly name to identify this SMTP credential";
+        case CredentialType.STRIPE:
+            return "My Stripe Account";
         default:
             return undefined;
     }
@@ -107,6 +114,8 @@ const getValueHelperText = (type: CredentialType) => {
             return "16-character app password from Google Account → Security → App passwords";
         case CredentialType.EMAIL_SMTP:
             return undefined; // Handled by specific fields
+        case CredentialType.STRIPE:
+            return "Signing secret starting with 'whsec_'";
         default:
             return undefined;
     }
@@ -130,6 +139,8 @@ const getValuePlaceholder = (type: CredentialType) => {
             return "xxxx xxxx xxxx xxxx (16-character app password)";
         case CredentialType.EMAIL_SMTP:
             return ""; // Handled separately
+        case CredentialType.STRIPE:
+            return "whsec_...";
         default:
             return "Paste your API Key here";
     }

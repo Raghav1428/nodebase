@@ -149,6 +149,7 @@ export const workflowsRouter = createTRPCRouter({
                     type: z.string().nullish(),
                     position: z.object({ x: z.number(), y: z.number() }),
                     data: z.record(z.string(), z.any()).optional(),
+                    credentialId: z.string().nullish(),
                 })
             ),
             edges: z.array(
@@ -192,14 +193,19 @@ export const workflowsRouter = createTRPCRouter({
                 });
 
                 await tx.node.createMany({
-                    data: nodes.map((node) => ({
-                        id: node.id,
-                        workflowId: id,
-                        name: node.type || "unknown",
-                        type: node.type as NodeType,
-                        position: node.position,
-                        data: node.data || {},
-                    }))
+                    data: nodes.map((node) => {
+                        // Extract credentialId from data if not at top level
+                        const credentialId = node.credentialId || (node.data as Record<string, any>)?.credentialId || null;
+                        return {
+                            id: node.id,
+                            workflowId: id,
+                            name: node.type || "unknown",
+                            type: node.type as NodeType,
+                            position: node.position,
+                            data: node.data || {},
+                            credentialId,
+                        };
+                    })
                 });
 
                 // Create a set of node IDs for efficient lookup
@@ -249,7 +255,10 @@ export const workflowsRouter = createTRPCRouter({
                 id: node.id,
                 type: node.type,
                 position: node.position as { x: number; y: number },
-                data: (node.data as Record<string, unknown>) || {},
+                data: {
+                    ...(node.data as Record<string, unknown>) || {},
+                    credentialId: node.credentialId, // Include credentialId in data for frontend
+                },
             }));
 
             // Transform server edges to react-flow compatible edges
@@ -322,4 +331,91 @@ export const workflowsRouter = createTRPCRouter({
             };
         },
         ),
+
+    generateGoogleSheetsSecret: protectedProcedure
+        .input(z.object({ workflowId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const { workflowId } = input;
+
+            const node = await prisma.node.findFirst({
+                where: {
+                    workflowId: workflowId,
+                    type: NodeType.GOOGLE_SHEETS_TRIGGER,
+                    workflow: {
+                        userId: ctx.auth.user.id
+                    }
+                }
+            });
+
+            if (!node) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Google Sheets Trigger node not found in this workflow"
+                });
+            }
+
+            const data = (node.data as Record<string, any>) || {};
+
+            if (data.secret) {
+                return { secret: data.secret as string };
+            }
+
+            const secret = crypto.randomUUID();
+
+            await prisma.node.update({
+                where: { id: node.id },
+                data: {
+                    data: {
+                        ...data,
+                        secret
+                    }
+                }
+            });
+
+            return { secret };
+        }),
+
+    generateWebhookSecret: protectedProcedure
+        .input(z.object({ workflowId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const { workflowId } = input;
+
+            const node = await prisma.node.findFirst({
+                where: {
+                    workflowId: workflowId,
+                    type: NodeType.WEBHOOK_TRIGGER,
+                    workflow: {
+                        userId: ctx.auth.user.id
+                    }
+                }
+            });
+
+            if (!node) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Webhook Trigger node not found in this workflow"
+                });
+            }
+
+            const data = (node.data as Record<string, any>) || {};
+
+            if (data.secret) {
+                return { secret: data.secret as string };
+            }
+
+            const secret = crypto.randomUUID();
+
+            await prisma.node.update({
+                where: { id: node.id },
+                data: {
+                    data: {
+                        ...data,
+                        secret
+                    }
+                }
+            });
+
+            return { secret };
+        }),
+        
 });

@@ -1,18 +1,20 @@
 "use client";
 
+import { useTRPC } from "@/trpc/client";
+import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { 
+import {
     Dialog,
     DialogContent,
     DialogDescription,
     DialogHeader,
-    DialogTitle 
+    DialogTitle
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CopyIcon } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { generateGoogleSheetsScript } from "./utils";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -29,14 +31,23 @@ export const GoogleSheetsTriggerDialog = ({
 
     const params = useParams();
     const workflowId = params.workflowId as string;
+    const trpc = useTRPC();
 
-    // Trigger filter options
+    const { data: secretData, mutate: generateSecret } = useMutation(
+        trpc.workflows.generateGoogleSheetsSecret.mutationOptions({})
+    );
+
+    useEffect(() => {
+        if (open && workflowId) {
+            generateSecret({ workflowId });
+        }
+    }, [open, workflowId, generateSecret]);
+
     const [includeFullData, setIncludeFullData] = useState(false);
     const [sheetName, setSheetName] = useState("");
     const [triggerValue, setTriggerValue] = useState("");
     const [debounceSeconds, setDebounceSeconds] = useState(0);
 
-    // Construct webhook url
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
     const webhookUrl = `${baseUrl}/api/webhooks/google-sheets?workflowId=${workflowId}`;
 
@@ -50,7 +61,7 @@ export const GoogleSheetsTriggerDialog = ({
     }
 
     const copyCustomScript = async () => {
-        const script = generateGoogleSheetsScript(webhookUrl, {
+        const script = generateGoogleSheetsScript(webhookUrl, secretData?.secret, {
             includeFullData,
             maxRows: 1000,
             sheetName: sheetName.trim(),
@@ -82,7 +93,7 @@ export const GoogleSheetsTriggerDialog = ({
                             Webhook URL
                         </Label>
                         <div className="flex gap-2">
-                            <Input 
+                            <Input
                                 id="webhook-url"
                                 value={webhookUrl}
                                 readOnly
@@ -118,7 +129,7 @@ export const GoogleSheetsTriggerDialog = ({
                                 Recommended
                             </span>
                         </div>
-                        
+
                         {/* Trigger Filters */}
                         <div className="space-y-3">
                             <div className="grid grid-cols-2 gap-3">
@@ -147,7 +158,7 @@ export const GoogleSheetsTriggerDialog = ({
                                     />
                                 </div>
                             </div>
-                            
+
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1">
                                     <Label htmlFor="debounce" className="text-xs">
@@ -164,7 +175,7 @@ export const GoogleSheetsTriggerDialog = ({
                                     />
                                 </div>
                             </div>
-                            
+
                             <div className="flex items-center space-x-2 pt-2">
                                 <Checkbox
                                     id="includeFullData"
@@ -176,7 +187,7 @@ export const GoogleSheetsTriggerDialog = ({
                                 </Label>
                             </div>
                         </div>
-                        
+
                         <Button
                             type="button"
                             onClick={copyCustomScript}
@@ -185,10 +196,10 @@ export const GoogleSheetsTriggerDialog = ({
                             <CopyIcon className="size-4 mr-2" />
                             Copy Custom Script
                         </Button>
-                        
+
                         <p className="text-xs text-muted-foreground">
-                            <strong>Sheet:</strong> Only trigger on this specific sheet/tab.<br/>
-                            <strong>Value:</strong> Only trigger when any cell changes to this value.<br/>
+                            <strong>Sheet:</strong> Only trigger on this specific sheet/tab.<br />
+                            <strong>Value:</strong> Only trigger when any cell changes to this value.<br />
                             <strong>Debounce:</strong> Minimum seconds between triggers.
                         </p>
                     </div>
@@ -201,7 +212,7 @@ export const GoogleSheetsTriggerDialog = ({
                                 variant="outline"
                                 size="sm"
                                 onClick={async () => {
-                                    const script = generateGoogleSheetsScript(webhookUrl);
+                                    const script = generateGoogleSheetsScript(webhookUrl, secretData?.secret);
                                     try {
                                         await navigator.clipboard.writeText(script);
                                         toast.success("Basic script copied (triggers on any change)");
@@ -218,9 +229,9 @@ export const GoogleSheetsTriggerDialog = ({
                                 variant="outline"
                                 size="sm"
                                 onClick={async () => {
-                                    const script = generateGoogleSheetsScript(webhookUrl, { 
-                                        includeFullData: true, 
-                                        maxRows: 1000 
+                                    const script = generateGoogleSheetsScript(webhookUrl, secretData?.secret, {
+                                        includeFullData: true,
+                                        maxRows: 1000
                                     });
                                     try {
                                         await navigator.clipboard.writeText(script);
@@ -235,7 +246,7 @@ export const GoogleSheetsTriggerDialog = ({
                             </Button>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            <strong>Basic:</strong> Triggers on any change, sends row data only.<br/>
+                            <strong>Basic:</strong> Triggers on any change, sends row data only.<br />
                             <strong>With All Data:</strong> Basic but includes full sheet (1000 rows) for summarization.
                         </p>
                     </div>
