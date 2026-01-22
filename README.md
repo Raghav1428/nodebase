@@ -137,9 +137,6 @@ npm run dev
 
 # Term 2: Start Inngest Dev Server
 npm run inngest:dev
-
-# OR 
-npm run dev:all
 ```
 
 Alternatively, if you have `mprocs` installed, you can run all services with:
