@@ -77,6 +77,8 @@ export const MongoDBDialog = ({
         },
     });
 
+    const selectedCredentialId = form.watch("credentialId");
+
     useEffect(() => {
         if (open) {
             form.reset({
@@ -132,12 +134,12 @@ export const MongoDBDialog = ({
                                                     field.onChange(value);
                                                 }
                                             }}
-                                            value={field.value}
+                                            value={field.value || undefined}
                                             disabled={isLoadingCredentials}
                                         >
                                             <FormControl>
                                                 <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder={credentials?.length ? "Select a credential" : "No credentials - Add one"} />
+                                                    <SelectValue placeholder={!field.value && credentials?.length ? "No credential selected" : credentials?.length ? "Select a credential" : "No credentials - Add one"} />
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
@@ -218,7 +220,7 @@ export const MongoDBDialog = ({
 
 
                             <DialogFooter className="mt-4">
-                                <Button type="submit">Save</Button>
+                                <Button type="submit" disabled={!selectedCredentialId}>Save</Button>
                             </DialogFooter>
                         </form>
                     </Form>

@@ -99,6 +99,7 @@ export const EmailDialog = ({
     });
 
     const watchVariableName = form.watch("variableName") || "myEmailCall";
+    const selectedCredentialId = form.watch("credentialId");
 
     useEffect(() => {
         if (open) {
@@ -180,12 +181,12 @@ export const EmailDialog = ({
                                                     field.onChange(value);
                                                 }
                                             }}
-                                            value={field.value}
+                                            value={field.value || undefined}
                                             disabled={isLoadingCredentials}
                                         >
                                             <FormControl>
                                                 <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder={allCredentials?.length ? "Select a credential" : "No credentials - Add one"} />
+                                                    <SelectValue placeholder={!field.value && allCredentials?.length ? "No credential selected" : allCredentials?.length ? "Select a credential" : "No credentials - Add one"} />
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
@@ -309,7 +310,7 @@ export const EmailDialog = ({
                             />
 
                             <DialogFooter className="mt-4">
-                                <Button type="submit">Save</Button>
+                                <Button type="submit" disabled={!selectedCredentialId}>Save</Button>
                             </DialogFooter>
                         </form>
                     </Form>

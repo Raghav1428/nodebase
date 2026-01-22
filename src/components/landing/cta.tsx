@@ -11,11 +11,11 @@ export const CTA = () => {
     const router = useRouter();
     return (
         <section className="py-20 relative overflow-hidden bg-neutral-950">
-             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-neutral-900/50 pointer-events-none" />
-             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(ellipse_at_top,var(--primary),transparent_50%)] opacity-20 pointer-events-none" />
-             
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-neutral-900/50 pointer-events-none" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(ellipse_at_top,var(--primary),transparent_50%)] opacity-20 pointer-events-none" />
+
             <Container className="relative z-10 flex flex-col items-center justify-center text-center">
-                <motion.h2 
+                <motion.h2
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
@@ -28,7 +28,7 @@ export const CTA = () => {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.1 }}
-                 className="text-neutral-400 max-w-xl mb-8 text-lg"
+                    className="text-neutral-400 max-w-xl mb-8 text-lg"
                 >
                     Join hundreds of developers building the next generation of automation tools. Start for free today.
                 </motion.p>

@@ -199,12 +199,12 @@ export const GeminiDialog = ({
                                                     field.onChange(value);
                                                 }
                                             }}
-                                            value={field.value}
+                                            value={field.value || undefined}
                                             disabled={isLoadingCredentials}
                                         >
                                             <FormControl>
                                                 <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder={credentials?.length ? "Select a credential" : "No credentials - Add one"} />
+                                                    <SelectValue placeholder={!field.value && credentials?.length ? "No credential selected" : credentials?.length ? "Select a credential" : "No credentials - Add one"} />
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
@@ -303,7 +303,7 @@ export const GeminiDialog = ({
                             />
 
                             <DialogFooter className="mt-4">
-                                <Button type="submit">Save</Button>
+                                <Button type="submit" disabled={isLoadingModels || !selectedCredentialId}>Save</Button>
                             </DialogFooter>
                         </form>
                     </Form>

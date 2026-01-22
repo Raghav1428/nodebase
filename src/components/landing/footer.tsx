@@ -8,7 +8,7 @@ import Image from "next/image";
 
 export const Footer = () => {
     return (
-        <footer className="bg-neutral-950 border-t border-white/10 py-12 md:py-16">
+        <footer className="bg-neutral-950 py-12 md:py-16">
             <Container>
                 {/* Make footer content read as a navigation region for assistive tech */}
                 <nav aria-label="Footer" className="mb-12">
@@ -82,7 +82,7 @@ export const Footer = () => {
                     </div>
                 </nav>
 
-                <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
                     <p className="text-neutral-500 text-sm">
                         &copy; {new Date().getFullYear()} Nodebase. All rights reserved.
                     </p>

@@ -132,6 +132,7 @@ export const GoogleSheetsDialog = ({
 
     const watchVariableName = form.watch("variableName") || "sheetsOutput";
     const watchOperation = form.watch("operation");
+    const selectedCredentialId = form.watch("credentialId");
 
     useEffect(() => {
         if (open) {
@@ -206,12 +207,12 @@ export const GoogleSheetsDialog = ({
                                                     field.onChange(value);
                                                 }
                                             }}
-                                            value={field.value}
+                                            value={field.value || undefined}
                                             disabled={isLoadingCredentials}
                                         >
                                             <FormControl>
                                                 <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder={credentials?.length ? "Select account" : "No accounts - Connect one"} />
+                                                    <SelectValue placeholder={!field.value && credentials?.length ? "No credential selected" : credentials?.length ? "Select account" : "No accounts - Connect one"} />
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
@@ -364,7 +365,7 @@ export const GoogleSheetsDialog = ({
                             </div>
 
                             <DialogFooter className="mt-4">
-                                <Button type="submit">Save</Button>
+                                <Button type="submit" disabled={!selectedCredentialId}>Save</Button>
                             </DialogFooter>
                         </form>
                     </Form>
