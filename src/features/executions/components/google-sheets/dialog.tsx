@@ -1,12 +1,12 @@
 "use client";
 
-import { 
+import {
     Dialog,
     DialogContent,
     DialogDescription,
     DialogFooter,
     DialogHeader,
-    DialogTitle 
+    DialogTitle
 } from "@/components/ui/dialog";
 import {
     Form,
@@ -34,7 +34,10 @@ import { useCredentialByType } from "@/features/credentials/hooks/use-credential
 import { CredentialType } from "@/generated/prisma";
 import Image from "next/image";
 import Link from "next/link";
-import { ExternalLinkIcon, TableIcon, ListIcon, LayersIcon, CopyIcon, CheckIcon } from "lucide-react";
+import { ExternalLinkIcon, TableIcon, ListIcon, LayersIcon, CopyIcon, CheckIcon, Plus } from "lucide-react";
+import { AddCredentialDialog } from "@/features/credentials/components/add-credential-dialog";
+import { useQueryClient } from "@tanstack/react-query";
+import { useTRPC } from "@/trpc/client";
 
 const formSchema = z.object({
     variableName: z
@@ -46,7 +49,7 @@ const formSchema = z.object({
     spreadsheetTitle: z.string().trim().optional(),
     spreadsheetId: z.string().trim().optional(),
     dataVariable: z.string().min(1, "Data variable is required"),
-}).superRefine((values, ctx) =>{
+}).superRefine((values, ctx) => {
     if (values.operation === "create" && !values.spreadsheetTitle?.trim()) {
         ctx.addIssue({
             code: "custom",
@@ -74,13 +77,13 @@ interface Props {
 
 const PromptItem = ({ icon, label, prompt }: { icon: React.ReactNode; label: string; prompt: string }) => {
     const [copied, setCopied] = useState(false);
-    
+
     const handleCopy = async () => {
         await navigator.clipboard.writeText(prompt);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
-    
+
     return (
         <div>
             <div className="flex items-center justify-between mb-1">
@@ -110,6 +113,10 @@ export const GoogleSheetsDialog = ({
 }: Props) => {
 
     const { data: credentials, isLoading: isLoadingCredentials } = useCredentialByType(CredentialType.GOOGLE_SHEETS);
+    const queryClient = useQueryClient();
+    const trpc = useTRPC();
+
+    const [addCredentialOpen, setAddCredentialOpen] = useState(false);
 
     const form = useForm<GoogleSheetsFormValues>({
         resolver: zodResolver(formSchema),
@@ -125,6 +132,7 @@ export const GoogleSheetsDialog = ({
 
     const watchVariableName = form.watch("variableName") || "sheetsOutput";
     const watchOperation = form.watch("operation");
+    const selectedCredentialId = form.watch("credentialId");
 
     useEffect(() => {
         if (open) {
@@ -139,215 +147,237 @@ export const GoogleSheetsDialog = ({
         }
     }, [open, defaultValues, credentials]);
 
+    const handleCredentialCreated = (credentialId: string) => {
+        // Invalidate credentials query to refetch the list
+        queryClient.invalidateQueries(trpc.credentials.getByType.queryOptions({ type: CredentialType.GOOGLE_SHEETS }));
+        // Auto-select the newly created credential
+        form.setValue("credentialId", credentialId);
+    };
+
     const handleSubmit = (values: GoogleSheetsFormValues) => {
         onSubmit(values);
         onOpenChange(false);
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>
-                        Google Sheets Configuration
-                    </DialogTitle>
-                    <DialogDescription>
-                        Export workflow data to a Google Spreadsheet
-                    </DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 mt-4">
-                        <FormField 
-                            control={form.control}
-                            name="variableName"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Variable Name</FormLabel>
-                                    <FormControl>
-                                        <Input 
-                                            placeholder="sheetsOutput" 
-                                            {...field} 
-                                        />
-                                    </FormControl>
-                                    <FormDescription>
-                                        Access output via: {`{{${watchVariableName}.spreadsheetUrl}}`}
-                                    </FormDescription>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        <FormField
-                            control={form.control}
-                            name="credentialId"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Google Account</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value} disabled={isLoadingCredentials}>
+        <>
+            <Dialog open={open} onOpenChange={onOpenChange}>
+                <DialogContent className="max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>
+                            Google Sheets Configuration
+                        </DialogTitle>
+                        <DialogDescription>
+                            Export workflow data to a Google Spreadsheet
+                        </DialogDescription>
+                    </DialogHeader>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 mt-4">
+                            <FormField
+                                control={form.control}
+                                name="variableName"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Variable Name</FormLabel>
                                         <FormControl>
-                                            <SelectTrigger className="w-full">
-                                                <SelectValue placeholder={credentials?.length ? "Select account" : "No accounts connected"} />
-                                            </SelectTrigger>
+                                            <Input
+                                                placeholder="sheetsOutput"
+                                                {...field}
+                                            />
                                         </FormControl>
-                                        <SelectContent>
-                                            {credentials?.map((credential) => (
-                                                <SelectItem key={credential.id} value={credential.id}>
+                                        <FormDescription>
+                                            Access output via: {`{{${watchVariableName}.spreadsheetUrl}}`}
+                                        </FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="credentialId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Google Account</FormLabel>
+                                        <Select
+                                            onValueChange={(value) => {
+                                                if (value === "__add_new__") {
+                                                    setAddCredentialOpen(true);
+                                                } else {
+                                                    field.onChange(value);
+                                                }
+                                            }}
+                                            value={field.value || undefined}
+                                            disabled={isLoadingCredentials}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder={!field.value && credentials?.length ? "No credential selected" : credentials?.length ? "Select account" : "No accounts - Connect one"} />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {credentials?.map((credential) => (
+                                                    <SelectItem key={credential.id} value={credential.id}>
+                                                        <div className="flex items-center gap-2">
+                                                            <Image
+                                                                src="/logos/google.svg"
+                                                                alt="Google Sheets"
+                                                                width={16}
+                                                                height={16}
+                                                            />
+                                                            <span>{credential.name}</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                ))}
+                                                <SelectItem value="__add_new__" className="hover:text-primary">
                                                     <div className="flex items-center gap-2">
-                                                        <Image 
-                                                            src="/logos/google.svg" 
-                                                            alt="Google Sheets" 
-                                                            width={16} 
-                                                            height={16} 
-                                                        />
-                                                        <span>{credential.name}</span>
+                                                        <Plus className="h-4 w-4" />
+                                                        <span>Connect Google Account...</span>
                                                     </div>
                                                 </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    {(!credentials || credentials.length === 0) && (
-                                        <FormDescription>
-                                            <Link 
-                                                href="/api/auth/google-sheets" 
-                                                className="text-primary hover:underline inline-flex items-center gap-1"
-                                            >
-                                                Connect Google Account <ExternalLinkIcon className="size-3" />
-                                            </Link>
-                                        </FormDescription>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="operation"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Operation</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="create">Create New Spreadsheet</SelectItem>
+                                                <SelectItem value="append">Append to Existing</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {watchOperation === "create" && (
+                                <FormField
+                                    control={form.control}
+                                    name="spreadsheetTitle"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Spreadsheet Title</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    placeholder="My Workflow Data"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormDescription>
+                                                Supports variables: {`{{trigger.name}}`}
+                                            </FormDescription>
+                                            <FormMessage />
+                                        </FormItem>
                                     )}
-                                    <FormMessage />
-                                </FormItem>
+                                />
                             )}
-                        />
 
-                        <FormField
-                            control={form.control}
-                            name="operation"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Operation</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value}>
-                                        <FormControl>
-                                            <SelectTrigger className="w-full">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="create">Create New Spreadsheet</SelectItem>
-                                            <SelectItem value="append">Append to Existing</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
+                            {watchOperation === "append" && (
+                                <FormField
+                                    control={form.control}
+                                    name="spreadsheetId"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Spreadsheet ID</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormDescription>
+                                                Find in spreadsheet URL: docs.google.com/spreadsheets/d/<strong>ID</strong>/edit
+                                            </FormDescription>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                             )}
-                        />
 
-                        {watchOperation === "create" && (
-                            <FormField 
+                            <FormField
                                 control={form.control}
-                                name="spreadsheetTitle"
+                                name="dataVariable"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Spreadsheet Title</FormLabel>
+                                        <FormLabel>Data Variable</FormLabel>
                                         <FormControl>
-                                            <Input 
-                                                placeholder="My Workflow Data" 
-                                                {...field} 
+                                            <Input
+                                                placeholder="gemini.geminiResponse"
+                                                {...field}
                                             />
                                         </FormControl>
                                         <FormDescription>
-                                            Supports variables: {`{{trigger.name}}`}
+                                            Path to data from a previous node (e.g., <code>gemini.geminiResponse</code>)
                                         </FormDescription>
                                         <FormMessage />
                                     </FormItem>
                                 )}
                             />
-                        )}
 
-                        {watchOperation === "append" && (
-                            <FormField 
-                                control={form.control}
-                                name="spreadsheetId"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Spreadsheet ID</FormLabel>
-                                        <FormControl>
-                                            <Input 
-                                                placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms" 
-                                                {...field} 
-                                            />
-                                        </FormControl>
-                                        <FormDescription>
-                                            Find in spreadsheet URL: docs.google.com/spreadsheets/d/<strong>ID</strong>/edit
-                                        </FormDescription>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        )}
-                        
-                        <FormField 
-                            control={form.control}
-                            name="dataVariable"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Data Variable</FormLabel>
-                                    <FormControl>
-                                        <Input 
-                                            placeholder="gemini.geminiResponse" 
-                                            {...field} 
-                                        />
-                                    </FormControl>
-                                    <FormDescription>
-                                        Path to data from a previous node (e.g., <code>gemini.geminiResponse</code>)
-                                    </FormDescription>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        <div className="rounded-lg bg-muted p-4 space-y-3">
-                            <h4 className="font-medium text-sm">Supported Data Formats</h4>
-                            <ul className="text-xs text-muted-foreground space-y-1.5">
-                                <li>
-                                    <strong>Array of objects</strong> → Table with headers
-                                </li>
-                                <li>
-                                    <strong>Simple array</strong> → One item per row
-                                </li>
-                                <li>
-                                    <strong>Plain text</strong> → Single cell
-                                </li>
-                            </ul>
-                        </div>
-
-                        <div className="rounded-lg bg-muted p-4 space-y-3">
-                            <h4 className="font-medium text-sm">Sample System Prompts</h4>
-                            <div className="space-y-3">
-                                <PromptItem 
-                                    icon={<TableIcon className="size-3" />}
-                                    label="For a data table:"
-                                    prompt='Output ONLY a valid JSON array of objects. Each object must have the same keys. Example format: [{"name":"...", "value":"...", "status":"..."}, ...]. No explanation, just JSON.'
-                                />
-                                <PromptItem 
-                                    icon={<ListIcon className="size-3" />}
-                                    label="For a simple list:"
-                                    prompt='Output ONLY a valid JSON array of strings. Example: ["Item 1", "Item 2", "Item 3"]. No explanation, just the JSON array.'
-                                />
-                                <PromptItem 
-                                    icon={<LayersIcon className="size-3" />}
-                                    label="For grouped/categorized data:"
-                                    prompt='Output ONLY a valid JSON array of objects with a "category" field for grouping. Example: [{"category":"Group A", "name":"...", "price":"..."}, ...]. No explanation.'
-                                />
+                            <div className="rounded-lg bg-muted p-4 space-y-3">
+                                <h4 className="font-medium text-sm">Supported Data Formats</h4>
+                                <ul className="text-xs text-muted-foreground space-y-1.5">
+                                    <li>
+                                        <strong>Array of objects</strong> → Table with headers
+                                    </li>
+                                    <li>
+                                        <strong>Simple array</strong> → One item per row
+                                    </li>
+                                    <li>
+                                        <strong>Plain text</strong> → Single cell
+                                    </li>
+                                </ul>
                             </div>
-                        </div>
-                        
-                        <DialogFooter className="mt-4">
-                            <Button type="submit">Save</Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
+
+                            <div className="rounded-lg bg-muted p-4 space-y-3">
+                                <h4 className="font-medium text-sm">Sample System Prompts</h4>
+                                <div className="space-y-3">
+                                    <PromptItem
+                                        icon={<TableIcon className="size-3" />}
+                                        label="For a data table:"
+                                        prompt='Output ONLY a valid JSON array of objects. Each object must have the same keys. Example format: [{"name":"...", "value":"...", "status":"..."}, ...]. No explanation, just JSON.'
+                                    />
+                                    <PromptItem
+                                        icon={<ListIcon className="size-3" />}
+                                        label="For a simple list:"
+                                        prompt='Output ONLY a valid JSON array of strings. Example: ["Item 1", "Item 2", "Item 3"]. No explanation, just the JSON array.'
+                                    />
+                                    <PromptItem
+                                        icon={<LayersIcon className="size-3" />}
+                                        label="For grouped/categorized data:"
+                                        prompt='Output ONLY a valid JSON array of objects with a "category" field for grouping. Example: [{"category":"Group A", "name":"...", "price":"..."}, ...]. No explanation.'
+                                    />
+                                </div>
+                            </div>
+
+                            <DialogFooter className="mt-4">
+                                <Button type="submit" disabled={!selectedCredentialId}>Save</Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
+                </DialogContent>
+            </Dialog>
+
+            <AddCredentialDialog
+                open={addCredentialOpen}
+                onOpenChange={setAddCredentialOpen}
+                credentialType={CredentialType.GOOGLE_SHEETS}
+                onSuccess={handleCredentialCreated}
+            />
+        </>
     )
 };

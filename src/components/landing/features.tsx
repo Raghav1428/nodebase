@@ -7,54 +7,54 @@ import React from "react";
 
 export function Features() {
   return (
-    <section id="features" className="py-20 bg-neutral-950">
-        <Container>
-            <div className="mb-12 text-center">
-                    <h2 className="text-3xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-neutral-200 to-neutral-500">
-                        Why Choose <strong className="text-primary">Nodebase</strong>?
-                    </h2>
-                    <p className="text-neutral-400 max-w-lg mx-auto">
-                         Packed with features to supercharge your automation development.
-                    </p>
-            </div>
-            <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <GridItem
-                    icon={<Box className="h-4 w-4 text-white" />}
-                    title="Visual Workflow Builder"
-                    description="Drag and drop nodes to create complex automations in minutes. No coding required."
-                />
+    <section id="features" className="bg-neutral-950">
+      <Container>
+        <div className="mb-12 text-center">
+          <h2 className="text-3xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-neutral-200 to-neutral-500">
+            Why Choose <strong className="text-primary">Nodebase</strong>?
+          </h2>
+          <p className="text-neutral-400 max-w-lg mx-auto">
+            Packed with features to supercharge your automation development.
+          </p>
+        </div>
+        <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <GridItem
+            icon={<Box className="h-4 w-4 text-white" />}
+            title="Visual Workflow Builder"
+            description="Drag and drop nodes to create complex automations in minutes. No coding required."
+          />
 
-                <GridItem
-                    icon={<Settings className="h-4 w-4 text-white" />}
-                    title="AI-Powered Nodes"
-                    description="Leverage the power of LLMs directly within your workflows for intelligent decision making."
-                />
+          <GridItem
+            icon={<Settings className="h-4 w-4 text-white" />}
+            title="AI-Powered Nodes"
+            description="Leverage the power of LLMs directly within your workflows for intelligent decision making."
+          />
 
-                <GridItem
-                    icon={<Lock className="h-4 w-4 text-white" />}
-                    title="Enterprise-Grade Security"
-                    description="SOC2 compliant infrastructure with end-to-end encryption for your sensitive data."
-                />
+          <GridItem
+            icon={<Lock className="h-4 w-4 text-white" />}
+            title="Enterprise-Grade Security"
+            description="Security-first infrastructure with end-to-end encryption for your sensitive data."
+          />
 
-                <GridItem
-                    icon={<Sparkles className="h-4 w-4 text-white" />}
-                    title="Real-time Analytics"
-                    description="Monitor execution logs, track performance, and debug workflows in real-time."
-                />
+          <GridItem
+            icon={<Sparkles className="h-4 w-4 text-white" />}
+            title="Real-time Analytics"
+            description="Monitor execution logs, track performance, and debug workflows in real-time."
+          />
 
-                <GridItem
-                    icon={<Search className="h-4 w-4 text-white" />}
-                    title="Global Edge Execution"
-                    description="Deploy your workflows to our global edge network for lightning-fast response times worldwide."
-                />
-                
-                <GridItem
-                    icon={<Workflow className="h-4 w-4 text-white" />}
-                    title="Seamless Integrations"
-                    description="Connect with your favorite tools and services with over 20+ pre-built integrations."
-                />
-            </ul>
-        </Container>
+          <GridItem
+            icon={<Search className="h-4 w-4 text-white" />}
+            title="Global Edge Execution"
+            description="Deploy your workflows to our global edge network for lightning-fast response times worldwide."
+          />
+
+          <GridItem
+            icon={<Workflow className="h-4 w-4 text-white" />}
+            title="Seamless Integrations"
+            description="Connect with your favorite tools and services with over 20+ pre-built integrations."
+          />
+        </ul>
+      </Container>
     </section>
   );
 }

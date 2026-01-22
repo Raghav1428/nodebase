@@ -60,13 +60,10 @@ export const Pricing = () => {
 
   return (
     <section id="pricing" className="py-24 bg-neutral-950 relative overflow-hidden">
-        {/* Background Gradients */}
-      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-      <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
       
       <Container>
         <div className="text-center mb-16">
-          <motion.h2 
+          <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -75,7 +72,7 @@ export const Pricing = () => {
           >
             Simple and Transparent Pricing
           </motion.h2>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -127,12 +124,12 @@ export const Pricing = () => {
                 ))}
               </ul>
 
-              <Button 
+              <Button
                 type="button"
                 variant={tier.highlight ? "default" : "outline"}
                 className={cn(
-                    "w-full", 
-                    !tier.highlight && "bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white"
+                  "w-full",
+                  !tier.highlight && "bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white"
                 )}
                 size="lg"
                 onClick={() => handleTierClick(tier)}
