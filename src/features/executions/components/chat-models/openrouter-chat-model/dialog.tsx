@@ -211,6 +211,7 @@ export const OpenRouterChatModelDialog = ({
                                         <Select
                                             onValueChange={field.onChange}
                                             value={field.value}
+                                            disabled={isLoadingModels || !selectedCredentialId}
                                         >
                                             <FormControl>
                                                 <SelectTrigger className="w-full">

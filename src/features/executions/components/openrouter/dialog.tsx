@@ -238,7 +238,7 @@ export const OpenRouterDialog = ({
                                         <Select
                                             onValueChange={field.onChange}
                                             value={field.value}
-                                            disabled={isLoadingModels || !models?.length}
+                                            disabled={isLoadingModels || !selectedCredentialId}
                                         >
                                             <FormControl>
                                                 <SelectTrigger className="w-full">

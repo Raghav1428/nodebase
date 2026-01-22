@@ -33,7 +33,7 @@ export function Features() {
           <GridItem
             icon={<Lock className="h-4 w-4 text-white" />}
             title="Enterprise-Grade Security"
-            description="SOC2 compliant infrastructure with end-to-end encryption for your sensitive data."
+            description="Security-first infrastructure with end-to-end encryption for your sensitive data."
           />
 
           <GridItem

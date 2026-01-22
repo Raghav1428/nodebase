@@ -238,6 +238,7 @@ export const GeminiDialog = ({
                                         <Select
                                             onValueChange={field.onChange}
                                             value={field.value}
+                                            disabled={isLoadingModels || !selectedCredentialId}
                                         >
                                             <FormControl>
                                                 <SelectTrigger className="w-full">
