@@ -170,7 +170,7 @@ const defaultSmtpConfig: SmtpConfig = {
 export const CredentialForm = ({
     initialData
 }: CredentialFormProps) => {
-    
+
     const router = useRouter();
     const createCredential = useCreateCredential();
     const updateCredential = useUpdateCredential();
@@ -230,7 +230,7 @@ export const CredentialForm = ({
                 handleError(error);
             }
         } else {
-            await createCredential.mutateAsync(values,{
+            await createCredential.mutateAsync(values, {
                 onSuccess: () => {
                     router.push("/credentials");
                 },
@@ -260,28 +260,28 @@ export const CredentialForm = ({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Type</FormLabel>
-                                            <Select onValueChange={(val) => {
-                                                field.onChange(val);
-                                                // Clear value if switching types (optional, but good for cleanliness)
-                                                // form.setValue("value", ""); 
-                                            }} value={field.value}>
-                                                <FormControl>
-                                                    <SelectTrigger className="w-full">
-                                                        <SelectValue placeholder="Select a type" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    {credentialTypeOptions.map((option) => (
-                                                        <SelectItem key={option.value} value={option.value}>
-                                                            <div className="flex items-center gap-2">
-                                                                <Image src={option.logo} alt={option.label} width={16} height={16} className={getLogoClassName(option.logo)} />
-                                                                <span>{option.label}</span>
-                                                            </div>
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                         <FormMessage />
+                                        <Select onValueChange={(val) => {
+                                            field.onChange(val);
+                                            // Clear value if switching types (optional, but good for cleanliness)
+                                            // form.setValue("value", ""); 
+                                        }} value={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Select a type" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {credentialTypeOptions.map((option) => (
+                                                    <SelectItem key={option.value} value={option.value}>
+                                                        <div className="flex items-center gap-2">
+                                                            <Image src={option.logo} alt={option.label} width={16} height={16} className={getLogoClassName(option.logo)} />
+                                                            <span>{option.label}</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
                                     </FormItem>
                                 )}
                             />
@@ -303,19 +303,20 @@ export const CredentialForm = ({
                                     </FormItem>
                                 )}
                             />
-                            
+
                             {watchType === CredentialType.GOOGLE_SHEETS ? (
-                                <div className="space-y-4 border p-4 rounded-md bg-slate-50 dark:bg-slate-900">
+                                <div className="space-y-4 border p-4 rounded-md bg-gray-50 dark:bg-gray-800">
                                     <h3 className="font-medium text-sm">Google Sheets OAuth</h3>
                                     <p className="text-sm text-muted-foreground">
                                         Connect your Google account to allow the application to create and edit spreadsheets on your behalf.
                                     </p>
                                     <Button
                                         type="button"
+                                        variant="outline"
                                         onClick={() => {
                                             window.location.href = "/api/auth/google-sheets";
                                         }}
-                                        className="w-full"
+                                        className="w-full bg-white hover:bg-gray-50 text-gray-700 border-gray-300"
                                     >
                                         <Image src="/logos/google.svg" alt="Google Sheets" width={20} height={20} className="mr-2" />
                                         Connect Google Account
@@ -325,24 +326,25 @@ export const CredentialForm = ({
                                     </p>
                                 </div>
                             ) : watchType === CredentialType.EMAIL_SMTP ? (
-                                <div className="space-y-4 border p-4 rounded-md bg-slate-50 dark:bg-slate-900">
+                                <div className="space-y-4 !border !border-gray-200 dark:!border-gray-700 p-4 rounded-md bg-card">
                                     <h3 className="font-medium text-sm">SMTP Configuration</h3>
-                                    
+
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <FormLabel>Host</FormLabel>
                                             <FormControl>
-                                                <Input 
+                                                <Input
                                                     value={smtpConfig.host}
                                                     onChange={(e) => updateSmtpField("host", e.target.value)}
                                                     placeholder="smtp.example.com"
+                                                    className="!bg-white dark:!bg-gray-700 !border-gray-300 dark:!border-gray-600 focus-visible:!border-gray-400 dark:focus-visible:!border-gray-500 focus-visible:!ring-gray-400/50 dark:focus-visible:!ring-gray-500/50"
                                                 />
                                             </FormControl>
                                         </div>
                                         <div className="space-y-2">
                                             <FormLabel>Port</FormLabel>
                                             <FormControl>
-                                                <Input 
+                                                <Input
                                                     type="number"
                                                     value={smtpConfig.port}
                                                     onChange={(e) => {
@@ -360,6 +362,7 @@ export const CredentialForm = ({
                                                         }
                                                     }}
                                                     placeholder="587"
+                                                    className="!bg-white dark:!bg-gray-700 !border-gray-300 dark:!border-gray-600 focus-visible:!border-gray-400 dark:focus-visible:!border-gray-500 focus-visible:!ring-gray-400/50 dark:focus-visible:!ring-gray-500/50"
                                                 />
                                             </FormControl>
                                         </div>
@@ -369,21 +372,23 @@ export const CredentialForm = ({
                                         <div className="space-y-2">
                                             <FormLabel>Username</FormLabel>
                                             <FormControl>
-                                                <Input 
+                                                <Input
                                                     value={smtpConfig.username}
                                                     onChange={(e) => updateSmtpField("username", e.target.value)}
                                                     placeholder="user@example.com"
+                                                    className="!bg-white dark:!bg-gray-700 !border-gray-300 dark:!border-gray-600 focus-visible:!border-gray-400 dark:focus-visible:!border-gray-500 focus-visible:!ring-gray-400/50 dark:focus-visible:!ring-gray-500/50"
                                                 />
                                             </FormControl>
                                         </div>
                                         <div className="space-y-2">
                                             <FormLabel>Password</FormLabel>
                                             <FormControl>
-                                                <Input 
+                                                <Input
                                                     type="password"
                                                     value={smtpConfig.password}
                                                     onChange={(e) => updateSmtpField("password", e.target.value)}
                                                     placeholder="••••••••"
+                                                    className="!bg-white dark:!bg-gray-700 !border-gray-300 dark:!border-gray-600 focus-visible:!border-gray-400 dark:focus-visible:!border-gray-500 focus-visible:!ring-gray-400/50 dark:focus-visible:!ring-gray-500/50"
                                                 />
                                             </FormControl>
                                         </div>
@@ -393,24 +398,25 @@ export const CredentialForm = ({
                                         <div className="space-y-2">
                                             <FormLabel>From Address</FormLabel>
                                             <FormControl>
-                                                <Input 
+                                                <Input
                                                     value={smtpConfig.from}
                                                     onChange={(e) => updateSmtpField("from", e.target.value)}
                                                     placeholder="sender@example.com"
+                                                    className="!bg-white dark:!bg-gray-700 !border-gray-300 dark:!border-gray-600 focus-visible:!border-gray-400 dark:focus-visible:!border-gray-500 focus-visible:!ring-gray-400/50 dark:focus-visible:!ring-gray-500/50"
                                                 />
                                             </FormControl>
                                         </div>
-                                         <div className="space-y-2 flex flex-col justify-end pb-2">
+                                        <div className="space-y-2 flex flex-col justify-end pb-2">
                                             <div className="flex items-center space-x-2">
-                                                <input 
-                                                    type="checkbox" 
+                                                <input
+                                                    type="checkbox"
                                                     id="secure"
-                                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                                    className="h-4 w-4 rounded !border-gray-300 dark:!border-gray-600 text-primary focus:ring-primary"
                                                     checked={smtpConfig.secure}
                                                     onChange={(e) => updateSmtpField("secure", e.target.checked)}
                                                 />
-                                                <label 
-                                                    htmlFor="secure" 
+                                                <label
+                                                    htmlFor="secure"
                                                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                                                 >
                                                     Secure Connection (SSL/TLS)
@@ -427,8 +433,8 @@ export const CredentialForm = ({
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>
-                                                {watchType === CredentialType.POSTGRES ? "Password" : 
-                                                 watchType === CredentialType.MONGODB ? "Connection String" : "Value"}
+                                                {watchType === CredentialType.POSTGRES ? "Password" :
+                                                    watchType === CredentialType.MONGODB ? "Connection String" : "Value"}
                                             </FormLabel>
                                             <FormControl>
                                                 <Input type="password" placeholder={getValuePlaceholder(watchType)} {...field} />
@@ -467,10 +473,10 @@ export const CredentialForm = ({
     )
 };
 
-export const CredentialView = ({credentialId}: {credentialId: string}) => {
+export const CredentialView = ({ credentialId }: { credentialId: string }) => {
 
     const { data: credential } = useSuspenseCredential(credentialId);
 
-    return <CredentialForm initialData={credential}/>
+    return <CredentialForm initialData={credential} />
 
 };
