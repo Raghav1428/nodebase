@@ -107,6 +107,13 @@ const credentialTypeConfig: Record<CredentialType, { label: string; logo: string
         valuePlaceholder: "",
         valueLabel: "OAuth",
     },
+    [CredentialType.STRIPE]: {
+        label: "Stripe",
+        logo: "/logos/stripe.svg",
+        valuePlaceholder: "whsec_...",
+        valueLabel: "Webhook Secret",
+        valueHelperText: "Found in Stripe Dashboard → Developers → Webhooks → Signing secret",
+    },
 };
 
 export const AddCredentialDialog = ({
@@ -185,7 +192,7 @@ export const AddCredentialDialog = ({
 
         // Also listen for window focus
         window.addEventListener('focus', handleFocus);
-        
+
         return () => {
             clearInterval(pollInterval);
             window.removeEventListener('focus', handleFocus);

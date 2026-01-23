@@ -8,6 +8,7 @@ export interface TriggerOptions {
 
 export const generateGoogleSheetsScript = (
   webhookUrl: string,
+  secret?: string,
   options?: TriggerOptions
 ) => {
   const includeFullData = options?.includeFullData ?? false;
@@ -152,6 +153,9 @@ function onEdit(e) {
     'method': 'post',
     'contentType': 'application/json',
     'payload': JSON.stringify(payload),
+    'headers': {
+      'X-Secret': ${JSON.stringify(secret || "")}
+    },
     'muteHttpExceptions': true
   };
 
@@ -214,6 +218,9 @@ function onFormSubmit(e) {
     'method': 'post',
     'contentType': 'application/json',
     'payload': JSON.stringify(payload),
+    'headers': {
+      'X-Secret': ${JSON.stringify(secret || "")}
+    },
     'muteHttpExceptions': true
   };
 

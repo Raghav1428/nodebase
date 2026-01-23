@@ -4,8 +4,9 @@ import { z } from "zod";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import prisma from "@/lib/db";
+import { NodeType } from "@/generated/prisma";
 
-const webhookBodySchema = z.any();
+const webhookBodySchema = z.looseObject({});
 
 const ratelimit = new Ratelimit({
     redis: Redis.fromEnv(),
@@ -29,6 +30,29 @@ export async function POST(req: NextRequest) {
 
         if (!workflow) {
             return NextResponse.json({ success: false, error: "Workflow not found" }, { status: 404 });
+        }
+
+        // Verify secret from X-Secret header
+        const providedSecret = req.headers.get("X-Secret");
+
+        // Find the webhook trigger node to get the secret
+        const node = await prisma.node.findFirst({
+            where: {
+                workflowId,
+                type: NodeType.WEBHOOK_TRIGGER,
+            },
+        });
+
+        if (node) {
+            const nodeData = node.data as Record<string, any>;
+            const expectedSecret = nodeData?.secret;
+
+            if (expectedSecret && providedSecret !== expectedSecret) {
+                return NextResponse.json(
+                    { success: false, error: "Invalid or missing secret" },
+                    { status: 401 }
+                );
+            }
         }
 
         // Rate limit by workflowId (or IP as fallback)

@@ -149,6 +149,7 @@ export const workflowsRouter = createTRPCRouter({
                     type: z.string().nullish(),
                     position: z.object({ x: z.number(), y: z.number() }),
                     data: z.record(z.string(), z.any()).optional(),
+                    credentialId: z.string().nullish(),
                 })
             ),
             edges: z.array(
@@ -185,6 +186,35 @@ export const workflowsRouter = createTRPCRouter({
                 }
             }
 
+            // Extract all credentialIds from nodes and validate ownership
+            const nodeCredentialIds = nodes
+                .map((node) => node.credentialId || (node.data as Record<string, any>)?.credentialId)
+                .filter((id): id is string => !!id);
+
+            // Remove duplicates
+            const uniqueCredentialIds = [...new Set(nodeCredentialIds)];
+
+            // Validate that all credentials belong to the current user
+            if (uniqueCredentialIds.length > 0) {
+                const ownedCredentials = await prisma.credential.findMany({
+                    where: {
+                        id: { in: uniqueCredentialIds },
+                        userId: ctx.auth.user.id,
+                    },
+                    select: { id: true },
+                });
+
+                const ownedCredentialIds = new Set(ownedCredentials.map(c => c.id));
+                const unauthorizedCredentialIds = uniqueCredentialIds.filter(id => !ownedCredentialIds.has(id));
+
+                if (unauthorizedCredentialIds.length > 0) {
+                    throw new TRPCError({
+                        code: "FORBIDDEN",
+                        message: `Unauthorized credential access: credentials do not belong to current user`,
+                    });
+                }
+            }
+
             //Transaction to ensure consistency
             return prisma.$transaction(async (tx) => {
                 await tx.node.deleteMany({
@@ -192,14 +222,19 @@ export const workflowsRouter = createTRPCRouter({
                 });
 
                 await tx.node.createMany({
-                    data: nodes.map((node) => ({
-                        id: node.id,
-                        workflowId: id,
-                        name: node.type || "unknown",
-                        type: node.type as NodeType,
-                        position: node.position,
-                        data: node.data || {},
-                    }))
+                    data: nodes.map((node) => {
+                        // Extract credentialId from data if not at top level
+                        const credentialId = node.credentialId || (node.data as Record<string, any>)?.credentialId || null;
+                        return {
+                            id: node.id,
+                            workflowId: id,
+                            name: node.type || "unknown",
+                            type: node.type as NodeType,
+                            position: node.position,
+                            data: node.data || {},
+                            credentialId,
+                        };
+                    })
                 });
 
                 // Create a set of node IDs for efficient lookup
@@ -249,7 +284,10 @@ export const workflowsRouter = createTRPCRouter({
                 id: node.id,
                 type: node.type,
                 position: node.position as { x: number; y: number },
-                data: (node.data as Record<string, unknown>) || {},
+                data: {
+                    ...(node.data as Record<string, unknown>) || {},
+                    credentialId: node.credentialId, // Include credentialId in data for frontend
+                },
             }));
 
             // Transform server edges to react-flow compatible edges
@@ -322,4 +360,127 @@ export const workflowsRouter = createTRPCRouter({
             };
         },
         ),
+
+    generateGoogleSheetsSecret: protectedProcedure
+        .input(z.object({ workflowId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const { workflowId } = input;
+
+            // Initial read to check if node exists and get current state
+            const node = await prisma.node.findFirst({
+                where: {
+                    workflowId: workflowId,
+                    type: NodeType.GOOGLE_SHEETS_TRIGGER,
+                    workflow: {
+                        userId: ctx.auth.user.id
+                    }
+                }
+            });
+
+            if (!node) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Google Sheets Trigger node not found in this workflow"
+                });
+            }
+
+            const data = (node.data as Record<string, any>) || {};
+
+            // If secret already exists, return it immediately
+            if (data.secret) {
+                return { secret: data.secret as string };
+            }
+
+            // Generate a new secret
+            const newSecret = crypto.randomUUID();
+
+            // Atomic conditional update: only set secret if it's still not set
+            // This uses updateMany with a JSON path condition to ensure atomicity
+            const updateResult = await prisma.$executeRaw`
+                UPDATE "Node"
+                SET "data" = jsonb_set(COALESCE("data", '{}'::jsonb), '{secret}', ${JSON.stringify(newSecret)}::jsonb)
+                WHERE "id" = ${node.id}
+                AND (
+                    "data" IS NULL 
+                    OR "data"->>'secret' IS NULL 
+                    OR "data"->>'secret' = ''
+                )
+            `;
+
+            // If update succeeded (affected 1 row), return our new secret
+            if (Number(updateResult) === 1) {
+                return { secret: newSecret };
+            }
+
+            // If update didn't affect any rows, another request set the secret first
+            // Re-read to get the canonical value
+            const updatedNode = await prisma.node.findUnique({
+                where: { id: node.id }
+            });
+
+            const updatedData = (updatedNode?.data as Record<string, any>) || {};
+            return { secret: updatedData.secret as string };
+        }),
+
+    generateWebhookSecret: protectedProcedure
+        .input(z.object({ workflowId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const { workflowId } = input;
+
+            // Initial read to check if node exists and get current state
+            const node = await prisma.node.findFirst({
+                where: {
+                    workflowId: workflowId,
+                    type: NodeType.WEBHOOK_TRIGGER,
+                    workflow: {
+                        userId: ctx.auth.user.id
+                    }
+                }
+            });
+
+            if (!node) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Webhook Trigger node not found in this workflow"
+                });
+            }
+
+            const data = (node.data as Record<string, any>) || {};
+
+            // If secret already exists, return it immediately
+            if (data.secret) {
+                return { secret: data.secret as string };
+            }
+
+            // Generate a new secret
+            const newSecret = crypto.randomUUID();
+
+            // Atomic conditional update: only set secret if it's still not set
+            // This uses raw SQL with a JSON path condition to ensure atomicity
+            const updateResult = await prisma.$executeRaw`
+                UPDATE "Node"
+                SET "data" = jsonb_set(COALESCE("data", '{}'::jsonb), '{secret}', ${JSON.stringify(newSecret)}::jsonb)
+                WHERE "id" = ${node.id}
+                AND (
+                    "data" IS NULL 
+                    OR "data"->>'secret' IS NULL 
+                    OR "data"->>'secret' = ''
+                )
+            `;
+
+            // If update succeeded (affected 1 row), return our new secret
+            if (Number(updateResult) === 1) {
+                return { secret: newSecret };
+            }
+
+            // If update didn't affect any rows, another request set the secret first
+            // Re-read to get the canonical value
+            const updatedNode = await prisma.node.findUnique({
+                where: { id: node.id }
+            });
+
+            const updatedData = (updatedNode?.data as Record<string, any>) || {};
+            return { secret: updatedData.secret as string };
+        }),
+
 });
