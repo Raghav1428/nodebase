@@ -73,7 +73,11 @@ export const GoogleFormTriggerDialog = ({
             toast.error("Please wait for webhook secret to be generated");
             return;
         }
-        const script = generateGoogleFormScript(webhookUrl, secretData?.secret);
+        if (isError || !secretData?.secret) {
+            toast.error("Secret generation failed — cannot copy script");
+            return;
+        }
+        const script = generateGoogleFormScript(webhookUrl, secretData.secret);
         try {
             await navigator.clipboard.writeText(script);
             toast.success("Google Apps Script copied to clipboard");

@@ -83,7 +83,7 @@ export const credentialsRouter = createTRPCRouter({
             id: z.string(),
             name: z.string().min(1, "Name is Required"),
             type: z.enum(CredentialType),
-            value: z.string().min(1, "API Key is Required"),
+            value: z.string().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
 
@@ -93,13 +93,18 @@ export const credentialsRouter = createTRPCRouter({
                 where: { id, userId: ctx.auth.user.id },
             });
 
+            const data: any = {
+                name,
+                type,
+            };
+
+            if (value) {
+                data.value = encrypt(value);
+            }
+
             return prisma.credential.update({
                 where: { id, userId: ctx.auth.user.id },
-                data: {
-                    name,
-                    type,
-                    value: encrypt(value),
-                },
+                data,
             });
         }),
 
