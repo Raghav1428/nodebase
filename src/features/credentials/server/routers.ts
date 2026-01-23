@@ -83,7 +83,7 @@ export const credentialsRouter = createTRPCRouter({
             id: z.string(),
             name: z.string().min(1, "Name is Required"),
             type: z.enum(CredentialType),
-            value: z.string().min(1, "API Key is Required"),
+            value: z.string().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
 
@@ -93,13 +93,18 @@ export const credentialsRouter = createTRPCRouter({
                 where: { id, userId: ctx.auth.user.id },
             });
 
+            const data: any = {
+                name,
+                type,
+            };
+
+            if (value) {
+                data.value = encrypt(value);
+            }
+
             return prisma.credential.update({
                 where: { id, userId: ctx.auth.user.id },
-                data: {
-                    name,
-                    type,
-                    value: encrypt(value),
-                },
+                data,
             });
         }),
 
@@ -110,6 +115,14 @@ export const credentialsRouter = createTRPCRouter({
                 where: {
                     id: input.id,
                     userId: ctx.auth.user.id,
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    type: true,
+                    createdAt: true,
+                    updatedAt: true,
+                    userId: true,
                 },
             });
         }),
@@ -138,6 +151,14 @@ export const credentialsRouter = createTRPCRouter({
                     },
                     orderBy: {
                         updatedAt: "desc"
+                    },
+                    select: {
+                        id: true,
+                        name: true,
+                        type: true,
+                        createdAt: true,
+                        updatedAt: true,
+                        userId: true,
                     },
                 }),
                 prisma.credential.count({
@@ -177,6 +198,14 @@ export const credentialsRouter = createTRPCRouter({
                 },
                 orderBy: {
                     updatedAt: "desc"
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    type: true,
+                    createdAt: true,
+                    updatedAt: true,
+                    userId: true,
                 },
             });
         }),

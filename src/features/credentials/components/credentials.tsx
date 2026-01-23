@@ -158,7 +158,7 @@ const credentialLogos: Record<CredentialType, string> = {
     [CredentialType.STRIPE]: "/logos/stripe.svg", 
 }
 
-export const CredentialsItem = ({ data }: { data: Credential }) => {
+export const CredentialsItem = ({ data }: { data: Omit<Credential, "value"> }) => {
 
     const removeCredential = useRemoveCredential();
     const handleRemove = () => {

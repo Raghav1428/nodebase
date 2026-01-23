@@ -483,4 +483,64 @@ export const workflowsRouter = createTRPCRouter({
             return { secret: updatedData.secret as string };
         }),
 
+    generateGoogleFormSecret: protectedProcedure
+        .input(z.object({ workflowId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const { workflowId } = input;
+
+            // Initial read to check if node exists and get current state
+            const node = await prisma.node.findFirst({
+                where: {
+                    workflowId: workflowId,
+                    type: NodeType.GOOGLE_FORM_TRIGGER,
+                    workflow: {
+                        userId: ctx.auth.user.id
+                    }
+                }
+            });
+
+            if (!node) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Google Form Trigger node not found in this workflow"
+                });
+            }
+
+            const data = (node.data as Record<string, any>) || {};
+
+            // If secret already exists, return it immediately
+            if (data.secret) {
+                return { secret: data.secret as string };
+            }
+
+            // Generate a new secret
+            const newSecret = crypto.randomUUID();
+
+            // Atomic conditional update: only set secret if it's still not set
+            const updateResult = await prisma.$executeRaw`
+                UPDATE "Node"
+                SET "data" = jsonb_set(COALESCE("data", '{}'::jsonb), '{secret}', ${JSON.stringify(newSecret)}::jsonb)
+                WHERE "id" = ${node.id}
+                AND (
+                    "data" IS NULL 
+                    OR "data"->>'secret' IS NULL 
+                    OR "data"->>'secret' = ''
+                )
+            `;
+
+            // If update succeeded (affected 1 row), return our new secret
+            if (Number(updateResult) === 1) {
+                return { secret: newSecret };
+            }
+
+            // If update didn't affect any rows, another request set the secret first
+            // Re-read to get the canonical value
+            const updatedNode = await prisma.node.findUnique({
+                where: { id: node.id }
+            });
+
+            const updatedData = (updatedNode?.data as Record<string, any>) || {};
+            return { secret: updatedData.secret as string };
+        }),
+
 });

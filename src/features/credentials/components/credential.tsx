@@ -21,7 +21,7 @@ import { getLogoClassName } from "@/lib/logo-utils";
 const formSchema = z.object({
     name: z.string().min(1, "Name is Required"),
     type: z.enum(CredentialType),
-    value: z.string().min(1, "Value is Required"),
+    value: z.string().optional(),
 })
 
 interface CredentialFormProps {
@@ -29,7 +29,7 @@ interface CredentialFormProps {
         id?: string;
         name: string;
         type: CredentialType;
-        value: string;
+        value?: string; // Optional because we don't return it from API anymore
     }
 };
 
@@ -121,28 +121,28 @@ const getValueHelperText = (type: CredentialType) => {
     }
 };
 
-const getValuePlaceholder = (type: CredentialType) => {
+const getValuePlaceholder = (type: CredentialType, isEdit: boolean) => {
     switch (type) {
         case CredentialType.GEMINI:
-            return "Paste your API Key here";
+            return isEdit ? "Paste the new API Key here" : "Paste your API Key here";
         case CredentialType.ANTHROPIC:
-            return "Paste your API Key here";
+            return isEdit ? "Paste the new API Key here" : "Paste your API Key here";
         case CredentialType.OPENAI:
-            return "Paste your API Key here";
+            return isEdit ? "Paste the new API Key here" : "Paste your API Key here";
         case CredentialType.OPENROUTER:
-            return "Paste your API Key here";
+            return isEdit ? "Paste the new API Key here" : "Paste your API Key here";
         case CredentialType.POSTGRES:
-            return "Your PostgreSQL password";
+            return isEdit ? "Paste the new password here" : "Your PostgreSQL password";
         case CredentialType.MONGODB:
-            return "mongodb+srv://user:password@cluster.mongodb.net";
+            return isEdit ? "Paste the new connection string here" : "mongodb+srv://user:password@cluster.mongodb.net";
         case CredentialType.EMAIL_GMAIL:
-            return "xxxx xxxx xxxx xxxx (16-character app password)";
+            return isEdit ? "Paste the new app password here" : "xxxx xxxx xxxx xxxx (16-character app password)";
         case CredentialType.EMAIL_SMTP:
             return ""; // Handled separately
         case CredentialType.STRIPE:
-            return "whsec_...";
+            return isEdit ? "Paste the new signing secret here" : "whsec_...";
         default:
-            return "Paste your API Key here";
+            return isEdit ? "Paste the new API Key here" : "Paste your API Key here";
     }
 };
 
@@ -232,16 +232,27 @@ export const CredentialForm = ({
     const onSubmit = async (values: FormValues) => {
         if (isEdit && initialData?.id) {
             try {
+                // Remove value if it's empty string (meaning unchanged)
+                const payload = { ...values };
+                if (!payload.value) {
+                    delete payload.value;
+                }
+
                 await updateCredential.mutateAsync({
                     id: initialData?.id,
-                    ...values,
+                    ...payload,
                 });
                 router.push("/credentials");
             } catch (error) {
                 handleError(error);
             }
         } else {
-            await createCredential.mutateAsync(values, {
+            if (!values.value) {
+                form.setError("value", { message: "Value is required for new credentials" });
+                return;
+            }
+            // For creation, we know value is present (checked above) but TS might need help
+            await createCredential.mutateAsync(values as any, {
                 onSuccess: () => {
                     router.push("/credentials");
                 },
@@ -448,7 +459,12 @@ export const CredentialForm = ({
                                                     watchType === CredentialType.MONGODB ? "Connection String" : "Value"}
                                             </FormLabel>
                                             <FormControl>
-                                                <Input type="password" placeholder={getValuePlaceholder(watchType)} {...field} />
+                                                <Input
+                                                    type="password"
+                                                    placeholder={getValuePlaceholder(watchType, isEdit)}
+                                                    {...field}
+                                                    value={field.value || ""}
+                                                />
                                             </FormControl>
                                             {getValueHelperText(watchType) && (
                                                 <FormDescription>{getValueHelperText(watchType)}</FormDescription>

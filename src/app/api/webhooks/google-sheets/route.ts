@@ -2,6 +2,18 @@ import { sendWorkflowExecution } from "@/inngest/utils";
 import { type NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { NodeType } from "@/generated/prisma";
+import { timingSafeEqual } from "crypto";
+
+function safeCompare(a: string, b: string): boolean {
+    const bufA = Buffer.from(a);
+    const bufB = Buffer.from(b);
+
+    if (bufA.length !== bufB.length) {
+        return false;
+    }
+
+    return timingSafeEqual(bufA, bufB);
+}
 
 export async function POST(req: NextRequest) {
     try {
@@ -25,27 +37,15 @@ export async function POST(req: NextRequest) {
         }
 
         const data = (node.data as Record<string, any>) || {};
+        const expectedSecret = data.secret;
 
-        // Enforce secret check if the node has one (all new nodes will)
-        // If strict security is required, fail if secret is missing on either side
-        if (data.secret && data.secret !== secret) {
-            return NextResponse.json({ success: false, error: "Unauthorized: Invalid secret" }, { status: 401 });
+        // Secrets are always required - no legacy fallback
+        if (!expectedSecret) {
+            return NextResponse.json({ success: false, error: "Unauthorized: Webhook secret not configured" }, { status: 401 });
         }
 
-        // If data.secret exists but no secret provided -> 401 (handled above)
-        // If data.secret DOES NOT exist (legacy), we might allow it, but for High Security audit, we should arguably deny.
-        // However, we just added the generation logic. If the user hasn't opened the dialog, the secret won't exist.
-        // To avoid breaking existing flows strictly, we check: if data.secret exists, we enforce it. 
-        // If the user wants to enforce it everywhere, they just open the dialogs.
-
-        // But user said "user specific secrets" and "severe".
-        // Use strict mode: If no secret is provided, deny. 
-        if (!secret && !data.secret) {
-            // This is the edge case: old nodes without secrets.
-            // Ideally we should auto-generate it here and return 401 asking them to reconfigure? No, that breaks the webhook.
-            // For now, allow legacy if NO secret exists on node.
-        } else if (!secret) {
-            return NextResponse.json({ success: false, error: "Unauthorized: Secret required" }, { status: 401 });
+        if (!secret || !safeCompare(secret, expectedSecret)) {
+            return NextResponse.json({ success: false, error: "Unauthorized: Invalid or missing secret" }, { status: 401 });
         }
 
 
