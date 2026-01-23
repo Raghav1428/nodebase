@@ -6,27 +6,33 @@ const nextConfig: NextConfig = {
   /* config options here */
   /* redirects removed to show landing page */
   async headers() {
+    const securityHeaders = [
+      {
+        key: "X-Frame-Options",
+        value: "DENY",
+      },
+      {
+        key: "X-Content-Type-Options",
+        value: "nosniff",
+      },
+      {
+        key: "Referrer-Policy",
+        value: "strict-origin-when-cross-origin",
+      },
+    ];
+
+    // Only include HSTS in production to avoid locking browsers during local development
+    if (process.env.NODE_ENV === "production") {
+      securityHeaders.push({
+        key: "Strict-Transport-Security",
+        value: "max-age=63072000; includeSubDomains; preload",
+      });
+    }
+
     return [
       {
         source: "/(.*)",
-        headers: [
-          {
-            key: "X-Frame-Options",
-            value: "DENY",
-          },
-          {
-            key: "X-Content-Type-Options",
-            value: "nosniff",
-          },
-          {
-            key: "Referrer-Policy",
-            value: "strict-origin-when-cross-origin",
-          },
-          {
-            key: "Strict-Transport-Security",
-            value: "max-age=63072000; includeSubDomains; preload"
-          }
-        ],
+        headers: securityHeaders,
       },
     ];
   },

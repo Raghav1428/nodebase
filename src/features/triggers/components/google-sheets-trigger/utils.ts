@@ -154,7 +154,7 @@ function onEdit(e) {
     'contentType': 'application/json',
     'payload': JSON.stringify(payload),
     'headers': {
-      'X-Secret': '${secret || ""}'
+      'X-Secret': ${JSON.stringify(secret || "")}
     },
     'muteHttpExceptions': true
   };
@@ -219,7 +219,7 @@ function onFormSubmit(e) {
     'contentType': 'application/json',
     'payload': JSON.stringify(payload),
     'headers': {
-      'X-Secret': '${secret || ""}'
+      'X-Secret': ${JSON.stringify(secret || "")}
     },
     'muteHttpExceptions': true
   };

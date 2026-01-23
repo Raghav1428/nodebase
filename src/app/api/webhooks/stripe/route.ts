@@ -6,10 +6,32 @@ import { NodeType } from "@/generated/prisma";
 import { decrypt } from "@/lib/encryption";
 
 export async function POST(req: NextRequest) {
-    const body = await req.text();
-    const signature = req.headers.get("Stripe-Signature") as string;
-    const url = new URL(req.url);
-    const workflowId = url.searchParams.get("workflowId");
+    let body: string;
+    let signature: string;
+    let workflowId: string | null;
+
+    // Parse request and validate required inputs
+    try {
+        body = await req.text();
+        const signatureHeader = req.headers.get("Stripe-Signature");
+
+        if (!signatureHeader) {
+            return NextResponse.json(
+                { success: false, error: "Missing Stripe-Signature header" },
+                { status: 400 }
+            );
+        }
+        signature = signatureHeader;
+
+        const url = new URL(req.url);
+        workflowId = url.searchParams.get("workflowId");
+        
+    } catch (error) {
+        return NextResponse.json(
+            { success: false, error: "Failed to parse request body" },
+            { status: 500 }
+        );
+    }
 
     if (!workflowId) {
         return NextResponse.json({ success: false, error: "Workflow ID is required" }, { status: 400 });

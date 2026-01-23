@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CopyIcon } from "lucide-react";
+import { CopyIcon, Loader2 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -33,15 +33,31 @@ export const GoogleSheetsTriggerDialog = ({
     const workflowId = params.workflowId as string;
     const trpc = useTRPC();
 
-    const { data: secretData, mutate: generateSecret } = useMutation(
+    const { data: secretData, mutate: generateSecret, isPending: isGeneratingSecret, isError, error } = useMutation(
         trpc.workflows.generateGoogleSheetsSecret.mutationOptions({})
     );
+
+    // Enable buttons when not loading - even if secret generation failed, allow copying (with empty secret)
+    const isLoading = isGeneratingSecret;
+    const hasSecret = !!secretData?.secret;
 
     useEffect(() => {
         if (open && workflowId) {
             generateSecret({ workflowId });
         }
     }, [open, workflowId, generateSecret]);
+
+    // Show warning if node doesn't exist yet (workflow not saved)
+    useEffect(() => {
+        if (isError && error) {
+            // Check if it's specifically the "node not found" error
+            if (error.message?.includes("not found")) {
+                toast.warning("Save the workflow first to generate a secure webhook secret. You can still copy scripts, but they will use an empty secret.");
+            } else {
+                toast.error(`Failed to generate webhook secret: ${error.message}`);
+            }
+        }
+    }, [isError, error]);
 
     const [includeFullData, setIncludeFullData] = useState(false);
     const [sheetName, setSheetName] = useState("");
@@ -61,6 +77,10 @@ export const GoogleSheetsTriggerDialog = ({
     }
 
     const copyCustomScript = async () => {
+        if (isLoading) {
+            toast.error("Please wait for webhook secret to be generated");
+            return;
+        }
         const script = generateGoogleSheetsScript(webhookUrl, secretData?.secret, {
             includeFullData,
             maxRows: 1000,
@@ -192,9 +212,14 @@ export const GoogleSheetsTriggerDialog = ({
                             type="button"
                             onClick={copyCustomScript}
                             className="w-full"
+                            disabled={isLoading}
                         >
-                            <CopyIcon className="size-4 mr-2" />
-                            Copy Custom Script
+                            {isGeneratingSecret ? (
+                                <Loader2 className="size-4 mr-2 animate-spin" />
+                            ) : (
+                                <CopyIcon className="size-4 mr-2" />
+                            )}
+                            {isGeneratingSecret ? "Generating..." : "Copy Custom Script"}
                         </Button>
 
                         <p className="text-xs text-muted-foreground">
@@ -211,7 +236,9 @@ export const GoogleSheetsTriggerDialog = ({
                                 type="button"
                                 variant="outline"
                                 size="sm"
+                                disabled={isLoading}
                                 onClick={async () => {
+                                    if (isLoading) return;
                                     const script = generateGoogleSheetsScript(webhookUrl, secretData?.secret);
                                     try {
                                         await navigator.clipboard.writeText(script);
@@ -221,14 +248,20 @@ export const GoogleSheetsTriggerDialog = ({
                                     }
                                 }}
                             >
-                                <CopyIcon className="size-3 mr-1" />
+                                {isGeneratingSecret ? (
+                                    <Loader2 className="size-3 mr-1 animate-spin" />
+                                ) : (
+                                    <CopyIcon className="size-3 mr-1" />
+                                )}
                                 Basic
                             </Button>
                             <Button
                                 type="button"
                                 variant="outline"
                                 size="sm"
+                                disabled={isLoading}
                                 onClick={async () => {
+                                    if (isLoading) return;
                                     const script = generateGoogleSheetsScript(webhookUrl, secretData?.secret, {
                                         includeFullData: true,
                                         maxRows: 1000
@@ -241,7 +274,11 @@ export const GoogleSheetsTriggerDialog = ({
                                     }
                                 }}
                             >
-                                <CopyIcon className="size-3 mr-1" />
+                                {isGeneratingSecret ? (
+                                    <Loader2 className="size-3 mr-1 animate-spin" />
+                                ) : (
+                                    <CopyIcon className="size-3 mr-1" />
+                                )}
                                 With All Data
                             </Button>
                         </div>
