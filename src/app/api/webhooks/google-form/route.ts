@@ -2,6 +2,18 @@ import { sendWorkflowExecution } from "@/inngest/utils";
 import { type NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { NodeType } from "@/generated/prisma";
+import { timingSafeEqual } from "crypto";
+
+function safeCompare(a: string, b: string): boolean {
+    const bufA = Buffer.from(a);
+    const bufB = Buffer.from(b);
+
+    if (bufA.length !== bufB.length) {
+        return false;
+    }
+
+    return timingSafeEqual(bufA, bufB);
+}
 
 export async function POST(req: NextRequest) {
     try {
@@ -32,7 +44,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: false, error: "Unauthorized: Webhook secret not configured" }, { status: 401 });
         }
 
-        if (!secret || secret !== expectedSecret) {
+        if (!secret || !safeCompare(secret, expectedSecret)) {
             return NextResponse.json({ success: false, error: "Unauthorized: Invalid or missing secret" }, { status: 401 });
         }
 

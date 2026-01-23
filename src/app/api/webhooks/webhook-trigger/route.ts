@@ -5,6 +5,20 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import prisma from "@/lib/db";
 import { NodeType } from "@/generated/prisma";
+import { timingSafeEqual } from "crypto";
+
+function safeCompare(a?: string | null, b?: string | null): boolean {
+    if (!a || !b) return false;
+
+    const bufA = Buffer.from(a);
+    const bufB = Buffer.from(b);
+
+    if (bufA.length !== bufB.length) {
+        return false;
+    }
+
+    return timingSafeEqual(bufA, bufB);
+}
 
 const webhookBodySchema = z.looseObject({});
 
@@ -47,7 +61,7 @@ export async function POST(req: NextRequest) {
             const nodeData = node.data as Record<string, any>;
             const expectedSecret = nodeData?.secret;
 
-            if (expectedSecret && providedSecret !== expectedSecret) {
+            if (expectedSecret && !safeCompare(providedSecret, expectedSecret)) {
                 return NextResponse.json(
                     { success: false, error: "Invalid or missing secret" },
                     { status: 401 }
