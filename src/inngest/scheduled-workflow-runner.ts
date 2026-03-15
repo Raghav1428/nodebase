@@ -5,20 +5,19 @@ import { NodeType } from "@/generated/prisma";
 import { CronExpressionParser } from "cron-parser";
 
 /**
- * Scheduled workflow runner that checks every 15 minutes for workflows
+ * Scheduled workflow runner that checks every 10 minutes for workflows
  * that should be triggered based on their cron expressions.
  * 
- * Note: Running every 15 minutes instead of every minute to optimize
+ * Note: Running every 10 minutes instead of every minute to optimize
  * database compute usage on the Neon free tier.
  */
 export const scheduledWorkflowRunner = inngest.createFunction(
     { id: "scheduled-workflow-runner", concurrency: 1 },
-    { cron: "*/15 * * * *" },
+    { cron: "*/10 * * * *" },
     async ({ step }) => {
 
-        return { checked: 0, triggered: 0, triggeredWorkflows: [] };
-
-        /* 
+        // return { checked: 0, triggered: 0, triggeredWorkflows: [] };
+        
         const now = new Date();
 
         // 1. Find workflows due to run
@@ -113,6 +112,6 @@ export const scheduledWorkflowRunner = inngest.createFunction(
             triggered: triggeredWorkflows.length,
             triggeredWorkflows,
         };
-        */
+        
     }
 );
