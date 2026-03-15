@@ -140,7 +140,7 @@ export const ViewModeSelector = () => {
     return (
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)} className="w-[200px]">
             <TabsList className="grid w-full grid-cols-2 h-9 rounded-lg bg-muted border shadow-lg">
-                <TabsTrigger value="workflow" className="text-xs rounded-md data-[state=active]:bg-background data-[state=active]:shadow-md">Workflow</TabsTrigger>
+                <TabsTrigger value="workflow" className="text-xs rounded-md data-[state=active]:bg-background data-[state=active]:shadow-md">Editor</TabsTrigger>
                 <TabsTrigger value="executions" id="view-executions-tab" className="text-xs rounded-md data-[state=active]:bg-background data-[state=active]:shadow-md">Executions</TabsTrigger>
             </TabsList>
         </Tabs>
