@@ -117,7 +117,7 @@ export const sendEmailVerification = async ({ user, url }: { user: { email: stri
       <body>
         <div class="container">
           <div class="card">
-            <div class="logo">⬡ Nodebase</div>
+            <div class="logo">Nodebase</div>
 
             <h1>Verify your email</h1>
             <p>Click the button below to verify your email address and get started with Nodebase.</p>
