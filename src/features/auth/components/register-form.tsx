@@ -38,7 +38,8 @@ export function RegisterForm() {
 
     const signInGithub = async () => {
     const data = await authClient.signIn.social({
-        provider: "github"
+        provider: "github",
+        callbackURL: "/workflows"
     }, {
         onSuccess: () => {
             router.push("/workflows");
@@ -51,7 +52,8 @@ export function RegisterForm() {
 
     const signInGoogle = async () => {
     const data = await authClient.signIn.social({
-        provider: "google"
+        provider: "google",
+        callbackURL: "/workflows"
     }, {
         onSuccess: () => {
             router.push("/workflows");
@@ -68,11 +70,12 @@ export function RegisterForm() {
                 name: values.email,
                 email: values.email,
                 password: values.password,
-                callbackURL: "/",
+                callbackURL: "/workflows",
             },
             {
                 onSuccess: () => {
-                    router.push("/workflows");
+                    toast.success("Account created! Please check your email to verify your account before logging in.");
+                    router.push("/login");
                 },
                 onError: (error) => {
                     toast.error(error.error.message || "Something went wrong");

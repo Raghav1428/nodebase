@@ -4,6 +4,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import prisma from "@/lib/db";
 import { polarClient } from "./polar";
+import { sendEmailVerification } from "./email";
 
 export const auth = betterAuth({
     database: prismaAdapter(prisma, {
@@ -11,7 +12,14 @@ export const auth = betterAuth({
     }),
     emailAndPassword: {
         enabled: true,
-        autoSignIn: true,
+        autoSignIn: false, 
+        requireEmailVerification: true,
+    },
+    emailVerification: {
+        requireEmailVerification: true,
+        sendOnSignUp: true,
+        autoSignInAfterVerification: true,
+        sendVerificationEmail: sendEmailVerification,
     },
     socialProviders: {
         github: {
