@@ -11,6 +11,7 @@ import { useNodeStatus } from "@/features/executions/hooks/use-node-status";
 
 type ScheduledTriggerNodeData = {
     cronExpression?: string;
+    timezone?: string;
 };
 
 type ScheduledTriggerNodeType = Node<ScheduledTriggerNodeData>
@@ -45,7 +46,9 @@ export const ScheduledTriggerNode = memo((props: NodeProps<ScheduledTriggerNodeT
     }
     
     const nodeData = props.data;
-    const description = nodeData?.cronExpression ? `Runs on: ${nodeData.cronExpression}` : "Not configured";
+    const description = nodeData?.cronExpression 
+        ? `Runs on: ${nodeData.cronExpression}${nodeData.timezone ? ` (${nodeData.timezone})` : ''}`
+        : "Not configured";
     
     return (
         <>

@@ -175,9 +175,11 @@ export const workflowsRouter = createTRPCRouter({
 
             if (scheduledNode && scheduledNode.data?.cronExpression) {
                 try {
+                    const timezone = (scheduledNode.data as Record<string, any>)?.timezone as string | undefined;
                     // @ts-ignore
                     const interval = CronExpressionParser.parse(scheduledNode.data.cronExpression, {
                         currentDate: now,
+                        tz: timezone || "UTC",
                     });
                     nextRunAt = interval.next().toDate();
                 } catch (error) {

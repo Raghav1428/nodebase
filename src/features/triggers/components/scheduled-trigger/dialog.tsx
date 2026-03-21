@@ -8,8 +8,6 @@ import {
     DialogHeader,
     DialogTitle 
 } from "@/components/ui/dialog";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangleIcon } from "lucide-react";
 import {
     Form,
     FormControl,
@@ -24,19 +22,37 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Textarea } from "@/components/ui/textarea";
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
 import z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+// Get all IANA timezone names
+const ALL_TIMEZONES: string[] = Intl.supportedValuesOf("timeZone");
+
+// Detect the user's browser timezone
+const BROWSER_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 const formSchema = z.object({
     cronExpression: z
         .string()
         .min(1, "Cron expression is required")
         .regex(/^(\S+\s+){4}\S+$/, { message: "Cron expression must have 5 parts (e.g., '0 9 * * 1' for every Monday at 9am)" }),
+    timezone: z
+        .string()
+        .min(1, "Timezone is required"),
 });
 
 export type ScheduledTriggerFormValues = z.infer<typeof formSchema>;
@@ -55,10 +71,13 @@ export const ScheduledTriggerDialog = ({
     defaultValues = {},
 }: Props) => {
 
+    const [tzPopoverOpen, setTzPopoverOpen] = useState(false);
+
     const form = useForm<ScheduledTriggerFormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             cronExpression: defaultValues.cronExpression || '',
+            timezone: defaultValues.timezone || BROWSER_TIMEZONE,
         },
     });
 
@@ -66,6 +85,7 @@ export const ScheduledTriggerDialog = ({
         if (open) {
             form.reset({
                 cronExpression: defaultValues.cronExpression || "",
+                timezone: defaultValues.timezone || BROWSER_TIMEZONE,
             });
         }
     }, [open, defaultValues, form]);
@@ -85,7 +105,7 @@ export const ScheduledTriggerDialog = ({
                     <DialogDescription>
                         Configure the <strong>schedule</strong> for when this workflow should run.
                         <span className="block mt-2 text-sm text-primary dark:text-primary">
-                            <strong>Note:</strong> The scheduler checks every 10 minutes. Your workflow will run at the nearest 10-minute interval after your scheduled time. The scheduler runs in UTC time.
+                            <strong>Note:</strong> The scheduler checks every 10 minutes. Your workflow will run at the nearest 10-minute interval after your scheduled time.
                         </span>
                     </DialogDescription>
                 </DialogHeader>
@@ -100,7 +120,7 @@ export const ScheduledTriggerDialog = ({
                 </Alert> */}
 
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8 mt-4">
+                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 mt-4">
                         <FormField 
                             control={form.control}
                             name="cronExpression"
@@ -145,6 +165,64 @@ export const ScheduledTriggerDialog = ({
                                                 </div>
                                             </CollapsibleContent>
                                         </Collapsible>
+                                    </FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="timezone"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-col">
+                                    <FormLabel>Timezone</FormLabel>
+                                    <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    aria-expanded={tzPopoverOpen}
+                                                    onClick={() => setTzPopoverOpen(!tzPopoverOpen)}
+                                                    className={cn(
+                                                        "w-full justify-between font-normal",
+                                                        !field.value && "text-muted-foreground"
+                                                    )}
+                                                >
+                                                    {field.value || "Select timezone..."}
+                                                    <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                                {tzPopoverOpen && (
+                                                    <div className="rounded-md border shadow-md">
+                                                        <Command>
+                                                            <CommandInput placeholder="Search timezone..." />
+                                                            <CommandList className="max-h-[200px]">
+                                                                <CommandEmpty>No timezone found.</CommandEmpty>
+                                                                <CommandGroup>
+                                                                    {ALL_TIMEZONES.map((tz) => (
+                                                                        <CommandItem
+                                                                            key={tz}
+                                                                            value={tz}
+                                                                            onSelect={() => {
+                                                                                field.onChange(tz);
+                                                                                setTzPopoverOpen(false);
+                                                                            }}
+                                                                        >
+                                                                            <CheckIcon
+                                                                                className={cn(
+                                                                                    "mr-2 h-4 w-4",
+                                                                                    field.value === tz ? "opacity-100" : "opacity-0"
+                                                                                )}
+                                                                            />
+                                                                            {tz.replace(/_/g, " ")}
+                                                                        </CommandItem>
+                                                                    ))}
+                                                                </CommandGroup>
+                                                            </CommandList>
+                                                        </Command>
+                                                    </div>
+                                                )}
+                                    <FormDescription>
+                                        The cron expression will be interpreted in this timezone.
                                     </FormDescription>
                                     <FormMessage />
                                 </FormItem>
