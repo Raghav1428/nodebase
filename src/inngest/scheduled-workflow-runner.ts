@@ -52,7 +52,7 @@ export const scheduledWorkflowRunner = inngest.createFunction(
 
         for (const workflow of dueWorkflows) {
             for (const node of workflow.nodes) {
-                const data = node.data as { cronExpression?: string };
+                const data = node.data as { cronExpression?: string; timezone?: string };
                 if (!data.cronExpression) {
                     console.warn(`Workflow ${workflow.id} has scheduled node ${node.id} without cronExpression`);
                     continue;
@@ -61,6 +61,7 @@ export const scheduledWorkflowRunner = inngest.createFunction(
                 try {
                     const interval = CronExpressionParser.parse(data.cronExpression, {
                         currentDate: now,
+                        tz: data.timezone || "UTC",
                     });
                     const nextRun = interval.next().toDate();
 
