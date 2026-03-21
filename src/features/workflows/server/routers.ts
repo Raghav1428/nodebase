@@ -183,8 +183,10 @@ export const workflowsRouter = createTRPCRouter({
                     });
                     nextRunAt = interval.next().toDate();
                 } catch (error) {
-                    console.error("Failed to parse cron expression on save:", error);
-                    // If invalid, we just don't schedule it (or could throw error)
+                    throw new TRPCError({
+                        code: "BAD_REQUEST",
+                        message: `Invalid cron expression "${scheduledNode.data.cronExpression}": ${error instanceof Error ? error.message : "parse failed"}`,
+                    });
                 }
             }
 

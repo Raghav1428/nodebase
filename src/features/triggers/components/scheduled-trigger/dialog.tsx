@@ -39,11 +39,24 @@ import { Button } from "@/components/ui/button";
 import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Get all IANA timezone names
-const ALL_TIMEZONES: string[] = Intl.supportedValuesOf("timeZone");
+// Get all IANA timezone names (guarded for older runtimes)
+const ALL_TIMEZONES: string[] = (() => {
+    try {
+        if (typeof Intl !== "undefined" && typeof Intl.supportedValuesOf === "function") {
+            return Intl.supportedValuesOf("timeZone");
+        }
+    } catch { /* unsupported */ }
+    return ["UTC"];
+})();
 
-// Detect the user's browser timezone
-const BROWSER_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
+// Detect the user's browser timezone (guarded)
+const BROWSER_TIMEZONE: string = (() => {
+    try {
+        return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    } catch {
+        return "UTC";
+    }
+})();
 
 const formSchema = z.object({
     cronExpression: z
@@ -77,7 +90,7 @@ export const ScheduledTriggerDialog = ({
         resolver: zodResolver(formSchema),
         defaultValues: {
             cronExpression: defaultValues.cronExpression || '',
-            timezone: defaultValues.timezone || BROWSER_TIMEZONE,
+            timezone: defaultValues.timezone || "UTC",
         },
     });
 
@@ -85,7 +98,7 @@ export const ScheduledTriggerDialog = ({
         if (open) {
             form.reset({
                 cronExpression: defaultValues.cronExpression || "",
-                timezone: defaultValues.timezone || BROWSER_TIMEZONE,
+                timezone: defaultValues.timezone || "UTC",
             });
         }
     }, [open, defaultValues, form]);
