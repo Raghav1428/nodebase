@@ -2,6 +2,7 @@ import {withSentryConfig} from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["emailmd"],
   devIndicators: false,
   /* config options here */
   /* redirects removed to show landing page */
