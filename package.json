@@ -76,7 +76,7 @@
     "gsap": "^3.13.0",
     "handlebars": "^4.7.8",
     "html-entities": "^2.6.0",
-    "inngest": "^3.44.3",
+    "inngest": "^3.50.0",
     "input-otp": "^1.4.2",
     "jotai": "^2.15.0",
     "ky": "^1.14.0",
