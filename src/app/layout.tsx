@@ -23,6 +23,11 @@ export const metadata: Metadata = {
   icons: {
     icon: "/logos/logo.svg",
   },
+  verification: {
+    other: {
+      'breachme-verify': 'breachme-verify=nodebase-raghavseth-in-865867b05fea79ac',
+    },
+  }
 };
 
 /**
