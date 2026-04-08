@@ -14,6 +14,7 @@ type HttpRequestNodeData = {
     endpoint?: string;
     method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
     body?: string;
+    headers?: Array<{ key: string; value: string }>;
 }
 
 type HttpRequestNodeType = Node<HttpRequestNodeData>

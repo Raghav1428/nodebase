@@ -15,6 +15,7 @@ type HttpRequestData = {
     endpoint?: string;
     method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
     body?: string;
+    headers?: Array<{ key: string; value: string }>;
 }
 
 export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({ data, nodeId, context, step, publish }) => {
@@ -62,8 +63,20 @@ export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({ data,
             const method = data.method;
             const body = data.body || "";
 
+            // Build user-defined headers (resolve Handlebars templates in values)
+            const userHeaders: Record<string, string> = {};
+            if (data.headers && data.headers.length > 0) {
+                for (const header of data.headers) {
+                    if (header.key) {
+                        const resolvedValue = Handlebars.compile(header.value)(context);
+                        userHeaders[header.key] = resolvedValue;
+                    }
+                }
+            }
+
             const options: KyOptions = {
                 method,
+                headers: { ...userHeaders },
             }
             if(["POST", "PUT", "PATCH"].includes(method)) {
                 const resolved = Handlebars.compile(data.body || "{}")(context);
@@ -71,6 +84,7 @@ export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({ data,
                 options.body = resolved;
                 options.headers = {
                     "Content-Type": "application/json",
+                    ...userHeaders,
                 }
             }
             
