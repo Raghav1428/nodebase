@@ -16,6 +16,7 @@ import { slackChannel } from "./channels/slack";
 import { webhookTriggerChannel } from "./channels/webhook-trigger";
 import { scheduledTriggerChannel } from "./channels/scheduled-trigger";
 import { telegramChannel } from "./channels/telegram";
+import { telegramTriggerChannel } from "./channels/telegram-trigger";
 import { openRouterChannel } from "./channels/openrouter";
 import { postgresChannel } from "./channels/postgres";
 import { aiAgentChannel } from "./channels/ai-agent";
@@ -61,6 +62,7 @@ export const executeWorkflow = inngest.createFunction(
       discordChannel(),
       slackChannel(),
       telegramChannel(),
+      telegramTriggerChannel(),
       postgresChannel(),
       aiAgentChannel(),
       mongodbChannel(),

@@ -68,6 +68,12 @@ const triggerNodes: NodeTypeOption[] = [
         icon: "/logos/webhook.svg",
     },
     {
+        type: NodeType.TELEGRAM_TRIGGER,
+        label: "Telegram",
+        description: "Runs the flow when a Telegram message is received.",
+        icon: "/logos/telegram.svg",
+    },
+    {
         type: NodeType.SCHEDULED_TRIGGER,
         label: "Schedule",
         description: "Runs the flow at a scheduled time.",
