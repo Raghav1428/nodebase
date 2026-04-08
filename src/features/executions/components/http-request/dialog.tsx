@@ -27,10 +27,16 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { PlusIcon, XIcon } from "lucide-react";
+
+const headerSchema = z.object({
+    key: z.string().min(1, "Header name is required"),
+    value: z.string().min(1, "Header value is required"),
+});
 
 const formSchema = z.object({
     variableName: z
@@ -40,6 +46,7 @@ const formSchema = z.object({
     endpoint: z.string().min(1, { message: "Please enter a valid URL" }),
     method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]),
     body: z.string().optional(),
+    headers: z.array(headerSchema).optional(),
 });
 
 export type HttpRequestFormValues = z.infer<typeof formSchema>;
@@ -67,7 +74,13 @@ export const HttpRequestDialog = ({
             endpoint: defaultValues.endpoint || '',
             method: defaultValues.method || 'GET',
             body: defaultValues.body || '',
+            headers: defaultValues.headers || [],
         },
+    });
+
+    const { fields, append, remove } = useFieldArray({
+        control: form.control,
+        name: "headers",
     });
 
     // Auto-advance onboarding if dialog is opened manually (or via double-click)
@@ -89,6 +102,7 @@ export const HttpRequestDialog = ({
                 endpoint: defaultValues.endpoint || '',
                 method: defaultValues.method || 'GET',
                 body: defaultValues.body || '',
+                headers: defaultValues.headers || [],
             });
         }
     }, [open, defaultValues, form])
@@ -197,6 +211,74 @@ export const HttpRequestDialog = ({
                                 </FormItem>
                             )}
                         />
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <FormLabel>Headers</FormLabel>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => append({ key: "", value: "" })}
+                                    className="h-7 gap-1 text-xs"
+                                >
+                                    <PlusIcon className="h-3.5 w-3.5" />
+                                    Add Header
+                                </Button>
+                            </div>
+                            {fields.length === 0 && (
+                                <p className="text-sm text-muted-foreground">
+                                    No custom headers configured. Click &quot;Add Header&quot; to add one.
+                                </p>
+                            )}
+                            {fields.map((field, index) => (
+                                <div key={field.id} className="flex items-start gap-2">
+                                    <FormField
+                                        control={form.control}
+                                        name={`headers.${index}.key`}
+                                        render={({ field }) => (
+                                            <FormItem className="flex-1">
+                                                <FormControl>
+                                                    <Input
+                                                        placeholder="Header name"
+                                                        {...field}
+                                                        className="font-mono text-sm"
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name={`headers.${index}.value`}
+                                        render={({ field }) => (
+                                            <FormItem className="flex-1">
+                                                <FormControl>
+                                                    <Input
+                                                        placeholder="Header value"
+                                                        {...field}
+                                                        className="font-mono text-sm"
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => remove(index)}
+                                        className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive"
+                                    >
+                                        <XIcon className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                            <FormDescription>
+                                Custom HTTP headers. Use {"{{variables}}"} for dynamic values.
+                            </FormDescription>
+                        </div>
                         <FormField 
                             control={form.control}
                             name="endpoint"
