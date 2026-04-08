@@ -17,6 +17,7 @@ import { ManualTriggerNode } from "@/features/triggers/components/manual-trigger
 import { ScheduledTriggerNode } from "@/features/triggers/components/scheduled-trigger/node";
 import { StripeTriggerNode } from "@/features/triggers/components/stripe-trigger/node";
 import { WebhookTriggerNode } from "@/features/triggers/components/webhook-trigger/node";
+import { TelegramTriggerNode } from "@/features/triggers/components/telegram-trigger/node";
 import { NodeType } from "@/generated/prisma";
 import { NodeTypes } from "@xyflow/react";
 import { GeminiChatModelNode } from "@/features/executions/components/chat-models/gemini-chat-model/node";
@@ -42,6 +43,7 @@ export const nodeComponents = {
     [NodeType.DISCORD]: DiscordNode,
     [NodeType.SLACK]: SlackNode,
     [NodeType.TELEGRAM]: TelegramNode,
+    [NodeType.TELEGRAM_TRIGGER]: TelegramTriggerNode,
     [NodeType.POSTGRES]: PostgresNode,
     [NodeType.MONGODB]: MongoDBNode,
     [NodeType.MCP_TOOLS]: McpToolsNode,

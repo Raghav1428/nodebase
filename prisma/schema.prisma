@@ -182,6 +182,7 @@ enum NodeType {
   EMAIL
   GOOGLE_SHEETS_TRIGGER
   GOOGLE_SHEETS
+  TELEGRAM_TRIGGER
 }
 
 enum AIProvider {

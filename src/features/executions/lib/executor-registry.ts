@@ -13,6 +13,7 @@ import { slackExecutor } from "../components/slack/executor";
 import { webhookTriggerExecutor } from "@/features/triggers/components/webhook-trigger/executor";
 import { scheduledTriggerExecutor } from "@/features/triggers/components/scheduled-trigger/executor";
 import { telegramExecutor } from "../components/telegram/executor";
+import { telegramTriggerExecutor } from "@/features/triggers/components/telegram-trigger/executor";
 import { openrouterExecutor } from "../components/openrouter/executor";
 import { postgresExecutor } from "../components/database/postgres/executor";
 import { mongodbExecutor } from "../components/database/mongodb/executor";
@@ -41,6 +42,7 @@ export const executorRegistry: Record<NodeType, NodeExecutor> = {
     [NodeType.WEBHOOK_TRIGGER]: webhookTriggerExecutor,
     [NodeType.SCHEDULED_TRIGGER]: scheduledTriggerExecutor,
     [NodeType.TELEGRAM]: telegramExecutor,
+    [NodeType.TELEGRAM_TRIGGER]: telegramTriggerExecutor,
     [NodeType.POSTGRES]: postgresExecutor,
     [NodeType.MONGODB]: mongodbExecutor,
     [NodeType.MCP_TOOLS]: mcpToolsExecutor,
