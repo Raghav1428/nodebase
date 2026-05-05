@@ -1,12 +1,11 @@
 import type { NodeExecutor } from "@/features/executions/types";
 import { NonRetriableError } from "inngest";
-import { generateText, CoreMessage } from "ai";
+import { generateText, type ModelMessage } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import Handlebars from "handlebars";
 import { openRouterChatModelChannel } from "@/inngest/channels/openrouter-chat-model";
 import prisma from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
-import { createNativeMcpTools, type McpToolsConfig } from "@/features/executions/tools/mcp-tools/native-mcp-tools";
 
 Handlebars.registerHelper("json", (context) => {
     const jsonString = JSON.stringify(context);
@@ -36,7 +35,12 @@ type McpToolsNodeConfig = {
 }
 
 export const openRouterChatModelExecutor: NodeExecutor<OpenRouterChatModelNodeData> = async ({ data, nodeId, userId, context, step, publish }) => {
-    await step.run(`publish-openrouter-loading-${nodeId}`, async () => {
+    // When called from agent loop, use iteration suffix for unique step IDs
+    // and skip step.run only for credential fetch (idempotent DB read).
+    const isAgentLoop = !!context._agentIteration;
+    const iterSuffix = isAgentLoop ? `-iter${context._agentIteration}` : '';
+
+    await step.run(`publish-openrouter-loading-${nodeId}${iterSuffix}`, async () => {
         await publish(
             openRouterChatModelChannel().status({
                 nodeId,
@@ -58,11 +62,19 @@ export const openRouterChatModelExecutor: NodeExecutor<OpenRouterChatModelNodeDa
     const systemPrompt = data.systemPrompt ? Handlebars.compile(data.systemPrompt)(context) : "You are a helpful assistant.";
     const userPrompt = Handlebars.compile(data.userPrompt)(context);
 
-    const credential = await step.run(`get-openrouter-credential-${nodeId}`, () => {
-        return prisma.credential.findUnique({
+    // Fetch credential — skip step.run in agent loop (idempotent DB read)
+    let credential;
+    if (isAgentLoop) {
+        credential = await prisma.credential.findUnique({
             where: { id: data.credentialId, userId },
-        })
-    });
+        });
+    } else {
+        credential = await step.run(`get-openrouter-credential-${nodeId}`, () => {
+            return prisma.credential.findUnique({
+                where: { id: data.credentialId, userId },
+            });
+        });
+    }
 
     if (!credential) {
         await publish(openRouterChatModelChannel().status({ nodeId, status: "error" }));
@@ -73,50 +85,28 @@ export const openRouterChatModelExecutor: NodeExecutor<OpenRouterChatModelNodeDa
         apiKey: decrypt(credential.value),
     });
 
-    // Track MCP cleanup function
-    let mcpCleanup: (() => Promise<void>) | null = null;
-
     try {
-        // Get chat history with roles
-        const chatHistory = (context._chatHistory as ChatMessageWithRole[]) || [];
-
-        // Get MCP tools config if available from AI Agent
-        const mcpToolsConfig = context._mcpToolsConfig as McpToolsNodeConfig | undefined;
-
-        // Create MCP tools if config provided
-        let mcpTools: Record<string, unknown> | undefined;
-        let mcpToolNames: string[] = [];
-
-        if (mcpToolsConfig && (mcpToolsConfig.serverUrl || mcpToolsConfig.command)) {
-            try {
-                // Infer transport type if not specified
-                const inferredTransportType = mcpToolsConfig.transportType
-                    ?? (mcpToolsConfig.serverUrl ? 'sse' : 'stdio');
-
-                const config: McpToolsConfig = {
-                    transportType: inferredTransportType,
-                    serverUrl: mcpToolsConfig.serverUrl,
-                    command: mcpToolsConfig.command,
-                    args: mcpToolsConfig.args,
-                };
-                const result = await createNativeMcpTools(config);
-                mcpTools = result.tools;
-                mcpToolNames = result.toolNames || [];
-                mcpCleanup = result.cleanup;
-            } catch (error) {
-                throw error;
-            }
+        // Get messages directly from AI Agent if provided, else build them locally
+        let messages: ModelMessage[] = [];
+        if (context._agentMessages && Array.isArray(context._agentMessages)) {
+            messages = [
+                { role: 'system', content: systemPrompt },
+                ...(context._agentMessages as ModelMessage[]),
+            ];
+        } else {
+            const chatHistory = (context._chatHistory as ChatMessageWithRole[]) || [];
+            messages = [
+                { role: 'system', content: systemPrompt },
+                ...chatHistory.map(msg => ({
+                    role: msg.role as 'user' | 'assistant',
+                    content: msg.content,
+                }) as ModelMessage),
+                { role: 'user', content: userPrompt },
+            ];
         }
 
-        // Build messages with proper roles from history
-        const messages: CoreMessage[] = [
-            { role: 'system', content: systemPrompt },
-            ...chatHistory.map(msg => ({
-                role: msg.role as 'user' | 'assistant',
-                content: msg.content,
-            })),
-            { role: 'user', content: userPrompt },
-        ];
+        // Get tools directly from AI Agent if provided
+        const mcpTools = context._agentTools as Record<string, unknown> | undefined;
 
         // Build generateText options
         const generateTextOptions: Parameters<typeof generateText>[0] = {
@@ -132,42 +122,13 @@ export const openRouterChatModelExecutor: NodeExecutor<OpenRouterChatModelNodeDa
         // Add tools if available
         if (mcpTools && Object.keys(mcpTools).length > 0) {
             (generateTextOptions as any).tools = mcpTools;
-            (generateTextOptions as any).maxSteps = 5;
         }
 
         const result = await generateText(generateTextOptions);
+        const text = result?.text ?? '';
+        const toolCalls = result?.toolCalls ?? [];
 
-        let text = result?.text ?? '';
-
-        if (!text && result?.toolResults && result.toolResults.length > 0) {
-            const toolResultTexts = result.toolResults.map((tr: unknown) => {
-                const toolResult = tr as Record<string, unknown>;
-                const res = toolResult.result ?? toolResult.output ?? toolResult.content ?? toolResult;
-                if (typeof res === 'string') return res;
-                if (res && typeof res === 'object') {
-                    if ('content' in res) {
-                        const content = (res as { content: Array<{ text?: string }> }).content;
-                        if (Array.isArray(content)) {
-                            return content.map(c => c.text || '').join('\n');
-                        }
-                    }
-                    if ('text' in res) {
-                        return (res as { text: string }).text;
-                    }
-                }
-                return JSON.stringify(res);
-            }).join('\n');
-            text = toolResultTexts || text;
-        }
-
-        if (mcpCleanup) {
-            try {
-                await mcpCleanup();
-            } catch (error) {
-            }
-        }
-
-        await step.run(`publish-openrouter-success-${nodeId}`, async () => {
+        await step.run(`publish-openrouter-success-${nodeId}${iterSuffix}`, async () => {
             await publish(
                 openRouterChatModelChannel().status({
                     nodeId,
@@ -179,20 +140,13 @@ export const openRouterChatModelExecutor: NodeExecutor<OpenRouterChatModelNodeDa
         return {
             ...context,
             _chatModelResponse: text,
-            _mcpToolNames: mcpToolNames.length > 0 ? mcpToolNames : undefined,
+            _chatModelToolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+            _chatModelResponseMessages: result.response?.messages,
             _chatHistory: undefined,
         };
 
     } catch (error) {
-        // Cleanup MCP client on error
-        if (mcpCleanup) {
-            try {
-                await mcpCleanup();
-            } catch (e) {
-            }
-        }
-
-        await step.run(`publish-openrouter-error-${nodeId}`, async () => {
+        await step.run(`publish-openrouter-error-${nodeId}${iterSuffix}`, async () => {
             await publish(
                 openRouterChatModelChannel().status({
                     nodeId,

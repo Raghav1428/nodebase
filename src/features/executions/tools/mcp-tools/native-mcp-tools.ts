@@ -7,6 +7,7 @@
  */
 
 import { z, ZodTypeAny } from 'zod';
+import { jsonSchema } from 'ai';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
@@ -20,7 +21,7 @@ export interface McpToolsConfig {
     args?: string;
 }
 
-export interface NativeMcpToolsResult {
+export interface McpToolSchemasResult {
     tools: Record<string, unknown>;
     toolCount: number;
     toolNames: string[];
@@ -120,38 +121,28 @@ function inputSchemaToZodObject(inputSchema: unknown): z.ZodObject<Record<string
 
 /**
  * Builds AI SDK tools from MCP tool definitions.
- * Shared helper for both stdio and SSE transports.
+ * Uses AI SDK's jsonSchema() to pass raw JSON Schema directly,
+ * avoiding the lossy JSON Schema → Zod → JSON Schema round-trip.
  */
 function buildToolsFromMcpList(
     listResult: { tools: Array<{ name: string; description?: string; inputSchema?: unknown }> },
-    client: Client
 ): { nativeTools: Record<string, unknown>; toolNames: string[] } {
     const toolNames = listResult.tools.map(t => t.name);
     const nativeTools: Record<string, unknown> = {};
 
-    for (const tool of listResult.tools) {
-        const zodParameters = inputSchemaToZodObject(tool.inputSchema);
+    for (const mcpTool of listResult.tools) {
+        // Ensure the inputSchema has type: "object" at the top level
+        const rawSchema = (mcpTool.inputSchema as Record<string, unknown>) || { type: 'object', properties: {} };
+        if (!rawSchema.type) {
+            rawSchema.type = 'object';
+        }
 
-        nativeTools[tool.name] = {
-            description: tool.description || `MCP tool: ${tool.name}`,
-            inputSchema: zodParameters,
-            execute: async (toolArgs: Record<string, unknown>) => {
-                const result = await client.callTool({
-                    name: tool.name,
-                    arguments: toolArgs,
-                });
-
-                // Extract text content from MCP result format
-                if (result.content && Array.isArray(result.content)) {
-                    const textContent = result.content
-                        .filter((c: { type: string }) => c.type === 'text')
-                        .map((c: { type: string; text?: string }) => c.text || '')
-                        .join('\n');
-                    return textContent || JSON.stringify(result);
-                }
-
-                return JSON.stringify(result);
-            },
+        const schema = jsonSchema(rawSchema);
+        nativeTools[mcpTool.name] = {
+            type: 'function',
+            description: mcpTool.description || `MCP tool: ${mcpTool.name}`,
+            parameters: schema,
+            inputSchema: schema, // CRITICAL: Required for AI SDK's internal anthropic parser (asSchema)
         };
     }
 
@@ -159,14 +150,10 @@ function buildToolsFromMcpList(
 }
 
 /**
- * Creates native AI SDK tools from an MCP server.
- * 
- * Uses the raw @modelcontextprotocol/sdk Client to:
- * 1. Connect to the MCP server via stdio or SSE
- * 2. List tools with full inputSchema
- * 3. Build proper AI SDK tools with Zod parameters and execute functions
+ * Connects to the MCP server securely and fetches available tools.
+ * Returns only tool schemas (without executing them) so the AI Agent can pass them to the LLM.
  */
-export async function createNativeMcpTools(config: McpToolsConfig): Promise<NativeMcpToolsResult> {
+export async function getMcpToolSchemas(config: McpToolsConfig): Promise<McpToolSchemasResult> {
     const { transportType, serverUrl, command, args } = config;
 
     // Validate configuration BEFORE creating client to avoid resource leaks
@@ -197,12 +184,12 @@ export async function createNativeMcpTools(config: McpToolsConfig): Promise<Nati
     try {
         if (transportType === 'stdio') {
             const argsArray = parseArgs(args);
-            const transport = new StdioClientTransport({ command: command!, args: argsArray });
+            const transport = new StdioClientTransport({ command: command!, args: argsArray, stderr: 'ignore' });
 
             await client.connect(transport);
 
             const listResult = await client.listTools();
-            const { nativeTools, toolNames } = buildToolsFromMcpList(listResult, client);
+            const { nativeTools, toolNames } = buildToolsFromMcpList(listResult);
 
             return {
                 tools: nativeTools,
@@ -219,7 +206,7 @@ export async function createNativeMcpTools(config: McpToolsConfig): Promise<Nati
             await client.connect(transport);
 
             const listResult = await client.listTools();
-            const { nativeTools, toolNames } = buildToolsFromMcpList(listResult, client);
+            const { nativeTools, toolNames } = buildToolsFromMcpList(listResult);
 
             return {
                 tools: nativeTools,
@@ -237,6 +224,51 @@ export async function createNativeMcpTools(config: McpToolsConfig): Promise<Nati
         } catch {
             // Ignore close errors during cleanup
         }
+        throw error;
+    }
+}
+
+/**
+ * Connects to the MCP server securely and executes a single specified tool.
+ * Evaluates the result and returns it as a string format (ideal for feeding back into the AI agent).
+ */
+export async function executeMcpTool(config: McpToolsConfig, toolName: string, toolArgs: Record<string, unknown>): Promise<string> {
+    const { transportType, serverUrl, command, args } = config;
+
+    const client = new Client({
+        name: 'nodebase-mcp-executor',
+        version: '1.0.0',
+    });
+
+    try {
+        if (transportType === 'stdio') {
+            const argsArray = parseArgs(args);
+            const transport = new StdioClientTransport({ command: command!, args: argsArray, stderr: 'ignore' });
+            await client.connect(transport);
+        } else {
+            const transport = new SSEClientTransport(new URL(serverUrl!));
+            await client.connect(transport);
+        }
+
+        const result = await client.callTool({
+            name: toolName,
+            arguments: toolArgs,
+        });
+
+        await client.close();
+
+        // Extract text content from MCP result format
+        if (result.content && Array.isArray(result.content)) {
+            const textContent = result.content
+                .filter((c: { type: string }) => c.type === 'text')
+                .map((c: { type: string; text?: string }) => c.text || '')
+                .join('\n');
+            return textContent || JSON.stringify(result);
+        }
+
+        return JSON.stringify(result);
+    } catch (error) {
+        try { await client.close(); } catch { }
         throw error;
     }
 }

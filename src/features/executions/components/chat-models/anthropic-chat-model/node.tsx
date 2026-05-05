@@ -81,9 +81,9 @@ export const AnthropicChatModelNode = memo((props: NodeProps<AnthropicChatModelN
                         onDoubleClick={handleOpenSettings}
                         status={nodeStatus}
                         rounded="full"
-                        className="p-2 rounded-full"
+                        className="flex items-center justify-center w-10 h-10 rounded-full"
                     >
-                        <Image src="/logos/anthropic.svg" alt="Anthropic" width={24} height={24} className="dark-invert" />
+                        <Image src="/logos/anthropic.svg" alt="Anthropic" width={24} height={24} className="dark-invert object-contain w-6 h-6" />
                         <BaseHandle id="model-to-ai-agent" type="source" position={Position.Top} />
                     </BaseNode>
 
