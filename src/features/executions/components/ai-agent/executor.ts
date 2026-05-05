@@ -199,12 +199,14 @@ export const aiAgentExecutor: NodeExecutor<AiAgentData> = async ({
     // -----------------------------------------------------------------
     // Publish success and clean up context
     // -----------------------------------------------------------------
-    await publish(
-      aiAgentChannel().status({
-        nodeId,
-        status: "success",
-      }),
-    );
+    await step.run(`publish-ai-agent-success-${nodeId}`, async () => {
+      await publish(
+        aiAgentChannel().status({
+          nodeId,
+          status: "success",
+        }),
+      );
+    });
 
     // Clean up internal context fields (preserve backward compatibility)
     const keysToRemove = new Set([

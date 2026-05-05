@@ -35,23 +35,19 @@ type McpToolsNodeConfig = {
 }
 
 export const openAIChatModelExecutor: NodeExecutor<OpenAIChatModelNodeData> = async ({ data, nodeId, userId, context, step, publish }) => {
-    // When called from agent loop, skip step.run wrappers to avoid HTTP round-trip overhead
+    // When called from agent loop, use iteration suffix for unique step IDs
+    // and skip step.run only for credential fetch (idempotent DB read).
     const isAgentLoop = !!context._agentIteration;
+    const iterSuffix = isAgentLoop ? `-iter${context._agentIteration}` : '';
 
-    // Publish loading status
-    const publishLoading = async () => {
+    await step.run(`publish-openai-loading-${nodeId}${iterSuffix}`, async () => {
         await publish(
             openAIChatModelChannel().status({
                 nodeId,
                 status: "loading",
             }),
         );
-    };
-    if (isAgentLoop) {
-        await publishLoading();
-    } else {
-        await step.run(`publish-openai-loading-${nodeId}`, publishLoading);
-    }
+    });
 
     if (!data.credentialId) {
         await publish(openAIChatModelChannel().status({ nodeId, status: "error" }));
@@ -66,7 +62,7 @@ export const openAIChatModelExecutor: NodeExecutor<OpenAIChatModelNodeData> = as
     const systemPrompt = data.systemPrompt ? Handlebars.compile(data.systemPrompt)(context) : "You are a helpful assistant.";
     const userPrompt = Handlebars.compile(data.userPrompt)(context);
 
-    // Fetch credential — skip step.run in agent loop
+    // Fetch credential — skip step.run in agent loop (idempotent DB read)
     let credential;
     if (isAgentLoop) {
         credential = await prisma.credential.findUnique({
@@ -132,20 +128,14 @@ export const openAIChatModelExecutor: NodeExecutor<OpenAIChatModelNodeData> = as
         const text = result?.text ?? '';
         const toolCalls = result?.toolCalls ?? [];
 
-        // Publish success status
-        const publishSuccess = async () => {
+        await step.run(`publish-openai-success-${nodeId}${iterSuffix}`, async () => {
             await publish(
                 openAIChatModelChannel().status({
                     nodeId,
                     status: "success",
                 }),
             );
-        };
-        if (isAgentLoop) {
-            await publishSuccess();
-        } else {
-            await step.run(`publish-openai-success-${nodeId}`, publishSuccess);
-        }
+        });
 
         return {
             ...context,
@@ -156,19 +146,14 @@ export const openAIChatModelExecutor: NodeExecutor<OpenAIChatModelNodeData> = as
         };
 
     } catch (error) {
-        const publishError = async () => {
+        await step.run(`publish-openai-error-${nodeId}${iterSuffix}`, async () => {
             await publish(
                 openAIChatModelChannel().status({
                     nodeId,
                     status: "error",
                 }),
             );
-        };
-        if (isAgentLoop) {
-            await publishError();
-        } else {
-            await step.run(`publish-openai-error-${nodeId}`, publishError);
-        }
+        });
 
         throw new NonRetriableError("OpenAI Chat Model Node: OpenAI execution failed", {
             cause: error,

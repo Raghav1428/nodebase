@@ -45,6 +45,7 @@ export async function createMcpToolsClient(config: McpToolsConfig): Promise<MCPC
             transport: new StdioClientTransport({
                 command,
                 args: argsArray,
+                stderr: 'ignore',
             }),
         });
         return client;

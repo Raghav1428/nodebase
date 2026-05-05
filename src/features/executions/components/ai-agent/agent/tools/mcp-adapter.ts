@@ -11,6 +11,8 @@ export interface McpLoadResult {
   toolNames: string[];
   cleanup: () => Promise<void>;
   transportType: string;
+  /** The original AI SDK tool schemas from the MCP server (with real JSON Schema parameters) */
+  nativeToolSchemas: Record<string, unknown>;
 }
 
 /**
@@ -67,5 +69,6 @@ export async function loadMcpTools(
     toolNames: schemasResult.toolNames,
     cleanup: schemasResult.cleanup,
     transportType: mcpConfig.transportType,
+    nativeToolSchemas: schemasResult.tools,
   };
 }

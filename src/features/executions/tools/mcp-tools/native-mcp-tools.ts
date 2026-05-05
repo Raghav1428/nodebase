@@ -184,7 +184,7 @@ export async function getMcpToolSchemas(config: McpToolsConfig): Promise<McpTool
     try {
         if (transportType === 'stdio') {
             const argsArray = parseArgs(args);
-            const transport = new StdioClientTransport({ command: command!, args: argsArray });
+            const transport = new StdioClientTransport({ command: command!, args: argsArray, stderr: 'ignore' });
 
             await client.connect(transport);
 
@@ -243,7 +243,7 @@ export async function executeMcpTool(config: McpToolsConfig, toolName: string, t
     try {
         if (transportType === 'stdio') {
             const argsArray = parseArgs(args);
-            const transport = new StdioClientTransport({ command: command!, args: argsArray });
+            const transport = new StdioClientTransport({ command: command!, args: argsArray, stderr: 'ignore' });
             await client.connect(transport);
         } else {
             const transport = new SSEClientTransport(new URL(serverUrl!));

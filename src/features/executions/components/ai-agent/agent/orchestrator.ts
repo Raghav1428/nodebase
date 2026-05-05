@@ -54,8 +54,41 @@ export async function runAgent(
 
     // Load MCP tools if tools node is connected
     if (config.toolsNode) {
-      mcpLoadResult = await loadMcpTools(config.toolsNode, deps);
-      registry.registerBulk(mcpLoadResult.tools);
+      // Publish MCP loading status so the frontend shows the indicator
+      await deps.step.run(`publish-mcp-loading-${config.toolsNode.id}`, async () => {
+        await deps.publish(
+          (await import("@/inngest/channels/mcp-tools")).mcpToolsChannel().status({
+            nodeId: config.toolsNode!.id,
+            status: "loading",
+          }),
+        );
+      });
+
+      try {
+        mcpLoadResult = await loadMcpTools(config.toolsNode, deps);
+        registry.registerBulk(mcpLoadResult.tools);
+
+        // Publish MCP success status
+        await deps.step.run(`publish-mcp-success-${config.toolsNode.id}`, async () => {
+          await deps.publish(
+            (await import("@/inngest/channels/mcp-tools")).mcpToolsChannel().status({
+              nodeId: config.toolsNode!.id,
+              status: "success",
+            }),
+          );
+        });
+      } catch (mcpError) {
+        // Publish MCP error status
+        await deps.step.run(`publish-mcp-error-${config.toolsNode.id}`, async () => {
+          await deps.publish(
+            (await import("@/inngest/channels/mcp-tools")).mcpToolsChannel().status({
+              nodeId: config.toolsNode!.id,
+              status: "error",
+            }),
+          );
+        });
+        throw mcpError;
+      }
     }
 
     // Load DB tools if database node is connected
@@ -118,26 +151,33 @@ export async function runAgent(
     let iterations = 0;
     let limitReached = false;
 
-    // Prepare AI SDK tools for generateText
-    const aiSdkTools = registry.size > 0 ? registry.toAISDKTools() : undefined;
-
-    // Use the tools already loaded by the registry — no need to re-invoke MCP executor.
-    // The registry.toAISDKTools() produces the same format the chat model executors expect.
+    // Prepare AI SDK tools for generateText.
+    // CRITICAL: For MCP tools, use the native tool schemas from the MCP server
+    // (they contain the real JSON Schema parameter definitions like latitude/longitude).
+    // The registry's toAISDKTools() loses parameter info because the adapter uses
+    // a permissive z.record() schema — the model then doesn't know what args to pass.
     let agentToolsForModel: Record<string, unknown> | undefined;
-    if (aiSdkTools && Object.keys(aiSdkTools).length > 0) {
-      agentToolsForModel = aiSdkTools;
+    if (mcpLoadResult && Object.keys(mcpLoadResult.nativeToolSchemas).length > 0) {
+      agentToolsForModel = mcpLoadResult.nativeToolSchemas;
+    } else {
+      const aiSdkTools = registry.size > 0 ? registry.toAISDKTools() : undefined;
+      if (aiSdkTools && Object.keys(aiSdkTools).length > 0) {
+        agentToolsForModel = aiSdkTools;
+      }
     }
 
     while (iterations < maxIterations) {
       iterations++;
 
-      // Publish iteration status (direct call, no step.run needed — idempotent event emit)
-      await deps.publish(
-        aiAgentChannel().status({
-          nodeId: config.agentNodeId,
-          status: "loading",
-        }),
-      );
+      // Publish iteration status
+      await deps.step.run(`agent-status-iter-${iterations}-${config.agentNodeId}`, async () => {
+        await deps.publish(
+          aiAgentChannel().status({
+            nodeId: config.agentNodeId,
+            status: "loading",
+          }),
+        );
+      });
 
       // Call the chat model executor
       let modelNode = config.modelNode;

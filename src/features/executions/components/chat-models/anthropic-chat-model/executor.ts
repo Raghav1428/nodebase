@@ -37,25 +37,21 @@ type McpToolsNodeConfig = {
 export const anthropicChatModelExecutor: NodeExecutor<
   AnthropicChatModelNodeData
 > = async ({ data, nodeId, userId, context, step, publish }) => {
-  // When called from agent loop, skip step.run wrappers to avoid HTTP round-trip overhead.
-  // Publish and credential fetch are cheap, idempotent operations.
+  // When called from agent loop, use iteration suffix for unique step IDs
+  // and skip step.run only for credential fetch (idempotent DB read).
+  // Publish calls MUST use step.run — Inngest auto-wraps bare publish() calls
+  // with the channel name as step ID, causing collisions in loops.
   const isAgentLoop = !!context._agentIteration;
+  const iterSuffix = isAgentLoop ? `-iter${context._agentIteration}` : '';
 
-  // Publish loading status
-  const publishLoading = async () => {
+  await step.run(`publish-anthropic-loading-${nodeId}${iterSuffix}`, async () => {
     await publish(
       anthropicChatModelChannel().status({
         nodeId,
         status: "loading",
       }),
     );
-  };
-  if (isAgentLoop) {
-    await publishLoading();
-  } else {
-    const iterSuffix = '';
-    await step.run(`publish-anthropic-loading-${nodeId}${iterSuffix}`, publishLoading);
-  }
+  });
 
   if (!data.credentialId) {
     await publish(
@@ -80,7 +76,7 @@ export const anthropicChatModelExecutor: NodeExecutor<
     : "You are a helpful assistant.";
   const userPrompt = Handlebars.compile(data.userPrompt)(context);
 
-  // Fetch credential — skip step.run in agent loop
+  // Fetch credential — skip step.run in agent loop (idempotent DB read)
   let credential;
   if (isAgentLoop) {
     credential = await prisma.credential.findUnique({
@@ -114,7 +110,6 @@ export const anthropicChatModelExecutor: NodeExecutor<
     // Get messages directly from AI Agent if provided, else build them locally
     let messages: ModelMessage[] = [];
     if (context._agentMessages && Array.isArray(context._agentMessages)) {
-      // Prepend system prompt even when agent provides messages
       messages = [
         { role: "system", content: systemPrompt },
         ...(context._agentMessages as ModelMessage[]),
@@ -157,20 +152,14 @@ export const anthropicChatModelExecutor: NodeExecutor<
     const text = result?.text ?? "";
     const toolCalls = result?.toolCalls ?? [];
 
-    // Publish success status
-    const publishSuccess = async () => {
+    await step.run(`publish-anthropic-success-${nodeId}${iterSuffix}`, async () => {
       await publish(
         anthropicChatModelChannel().status({
           nodeId,
           status: "success",
         }),
       );
-    };
-    if (isAgentLoop) {
-      await publishSuccess();
-    } else {
-      await step.run(`publish-anthropic-success-${nodeId}`, publishSuccess);
-    }
+    });
 
     return {
       ...context,
@@ -180,19 +169,14 @@ export const anthropicChatModelExecutor: NodeExecutor<
       _chatHistory: undefined,
     };
   } catch (error) {
-    const publishError = async () => {
+    await step.run(`publish-anthropic-error-${nodeId}${iterSuffix}`, async () => {
       await publish(
         anthropicChatModelChannel().status({
           nodeId,
           status: "error",
         }),
       );
-    };
-    if (isAgentLoop) {
-      await publishError();
-    } else {
-      await step.run(`publish-anthropic-error-${nodeId}`, publishError);
-    }
+    });
 
     throw new NonRetriableError(
       "Anthropic Chat Model Node: Anthropic execution failed",

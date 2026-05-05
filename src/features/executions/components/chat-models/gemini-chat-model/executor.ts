@@ -35,23 +35,19 @@ type McpToolsNodeConfig = {
 }
 
 export const geminiChatModelExecutor: NodeExecutor<GeminiChatModelNodeData> = async ({ data, nodeId, userId, context, step, publish }) => {
-    // When called from agent loop, skip step.run wrappers to avoid HTTP round-trip overhead
+    // When called from agent loop, use iteration suffix for unique step IDs
+    // and skip step.run only for credential fetch (idempotent DB read).
     const isAgentLoop = !!context._agentIteration;
+    const iterSuffix = isAgentLoop ? `-iter${context._agentIteration}` : '';
 
-    // Publish loading status
-    const publishLoading = async () => {
+    await step.run(`publish-gemini-loading-${nodeId}${iterSuffix}`, async () => {
         await publish(
             geminiChatModelChannel().status({
                 nodeId,
                 status: "loading",
             }),
         );
-    };
-    if (isAgentLoop) {
-        await publishLoading();
-    } else {
-        await step.run(`publish-gemini-loading-${nodeId}`, publishLoading);
-    }
+    });
 
     if (!data.credentialId) {
         await publish(geminiChatModelChannel().status({ nodeId, status: "error" }));
@@ -66,7 +62,7 @@ export const geminiChatModelExecutor: NodeExecutor<GeminiChatModelNodeData> = as
     const systemPrompt = data.systemPrompt ? Handlebars.compile(data.systemPrompt)(context) : "You are a helpful assistant.";
     const userPrompt = Handlebars.compile(data.userPrompt)(context);
 
-    // Fetch credential — skip step.run in agent loop
+    // Fetch credential — skip step.run in agent loop (idempotent DB read)
     let credential;
     if (isAgentLoop) {
         credential = await prisma.credential.findUnique({
@@ -132,20 +128,14 @@ export const geminiChatModelExecutor: NodeExecutor<GeminiChatModelNodeData> = as
         const text = result?.text ?? '';
         const toolCalls = result?.toolCalls ?? [];
 
-        // Publish success status
-        const publishSuccess = async () => {
+        await step.run(`publish-gemini-success-${nodeId}${iterSuffix}`, async () => {
             await publish(
                 geminiChatModelChannel().status({
                     nodeId,
                     status: "success",
                 }),
             );
-        };
-        if (isAgentLoop) {
-            await publishSuccess();
-        } else {
-            await step.run(`publish-gemini-success-${nodeId}`, publishSuccess);
-        }
+        });
 
         return {
             ...context,
@@ -156,19 +146,14 @@ export const geminiChatModelExecutor: NodeExecutor<GeminiChatModelNodeData> = as
         };
 
     } catch (error) {
-        const publishError = async () => {
+        await step.run(`publish-gemini-error-${nodeId}${iterSuffix}`, async () => {
             await publish(
                 geminiChatModelChannel().status({
                     nodeId,
                     status: "error",
                 }),
             );
-        };
-        if (isAgentLoop) {
-            await publishError();
-        } else {
-            await step.run(`publish-gemini-error-${nodeId}`, publishError);
-        }
+        });
 
         throw new NonRetriableError("Gemini Chat Model Node: Gemini execution failed", {
             cause: error,
