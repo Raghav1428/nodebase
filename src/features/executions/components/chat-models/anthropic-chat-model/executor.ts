@@ -1,206 +1,204 @@
-import type { NodeExecutor } from "@/features/executions/types";
-import { NonRetriableError } from "inngest";
-import { generateText, CoreMessage } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
+import { generateText, type ModelMessage } from "ai";
 import Handlebars from "handlebars";
+import { NonRetriableError } from "inngest";
+import type { NodeExecutor } from "@/features/executions/types";
 import { anthropicChatModelChannel } from "@/inngest/channels/anthropic-chat-model";
 import prisma from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
-import { createNativeMcpTools, type McpToolsConfig } from "@/features/executions/tools/mcp-tools/native-mcp-tools";
 
 Handlebars.registerHelper("json", (context) => {
-    const jsonString = JSON.stringify(context);
-    const safeString = new Handlebars.SafeString(jsonString);
-    return safeString;
+  const jsonString = JSON.stringify(context);
+  const safeString = new Handlebars.SafeString(jsonString);
+  return safeString;
 });
 
 type AnthropicChatModelNodeData = {
-    credentialId?: string;
-    model?: string;
-    systemPrompt?: string;
-    userPrompt?: string;
-}
+  credentialId?: string;
+  model?: string;
+  systemPrompt?: string;
+  userPrompt?: string;
+};
 
 // Chat message with role for proper conversation history
 type ChatMessageWithRole = {
-    role: 'user' | 'assistant';
-    content: string;
-}
+  role: "user" | "assistant";
+  content: string;
+};
 
 // MCP Tools config from AI Agent
 type McpToolsNodeConfig = {
-    transportType?: 'sse' | 'stdio' | 'http';
-    serverUrl?: string;
-    command?: string;
-    args?: string;
-}
+  transportType?: "sse" | "stdio" | "http";
+  serverUrl?: string;
+  command?: string;
+  args?: string;
+};
 
-export const anthropicChatModelExecutor: NodeExecutor<AnthropicChatModelNodeData> = async ({ data, nodeId, userId, context, step, publish }) => {
-    await step.run(`publish-anthropic-loading-${nodeId}`, async () => {
-        await publish(
-            anthropicChatModelChannel().status({
-                nodeId,
-                status: "loading",
-            }),
-        );
+export const anthropicChatModelExecutor: NodeExecutor<
+  AnthropicChatModelNodeData
+> = async ({ data, nodeId, userId, context, step, publish }) => {
+  // When called from agent loop, skip step.run wrappers to avoid HTTP round-trip overhead.
+  // Publish and credential fetch are cheap, idempotent operations.
+  const isAgentLoop = !!context._agentIteration;
+
+  // Publish loading status
+  const publishLoading = async () => {
+    await publish(
+      anthropicChatModelChannel().status({
+        nodeId,
+        status: "loading",
+      }),
+    );
+  };
+  if (isAgentLoop) {
+    await publishLoading();
+  } else {
+    const iterSuffix = '';
+    await step.run(`publish-anthropic-loading-${nodeId}${iterSuffix}`, publishLoading);
+  }
+
+  if (!data.credentialId) {
+    await publish(
+      anthropicChatModelChannel().status({ nodeId, status: "error" }),
+    );
+    throw new NonRetriableError(
+      "Anthropic Chat Model Node: Credential is required",
+    );
+  }
+
+  if (!data.userPrompt) {
+    await publish(
+      anthropicChatModelChannel().status({ nodeId, status: "error" }),
+    );
+    throw new NonRetriableError(
+      "Anthropic Chat Model Node: User prompt is required",
+    );
+  }
+
+  const systemPrompt = data.systemPrompt
+    ? Handlebars.compile(data.systemPrompt)(context)
+    : "You are a helpful assistant.";
+  const userPrompt = Handlebars.compile(data.userPrompt)(context);
+
+  // Fetch credential — skip step.run in agent loop
+  let credential;
+  if (isAgentLoop) {
+    credential = await prisma.credential.findUnique({
+      where: { id: data.credentialId, userId },
     });
-
-    if (!data.credentialId) {
-        await publish(anthropicChatModelChannel().status({ nodeId, status: "error" }));
-        throw new NonRetriableError("Anthropic Chat Model Node: Credential is required");
-    }
-
-    if (!data.userPrompt) {
-        await publish(anthropicChatModelChannel().status({ nodeId, status: "error" }));
-        throw new NonRetriableError("Anthropic Chat Model Node: User prompt is required");
-    }
-
-    const systemPrompt = data.systemPrompt ? Handlebars.compile(data.systemPrompt)(context) : "You are a helpful assistant.";
-    const userPrompt = Handlebars.compile(data.userPrompt)(context);
-
-    const credential = await step.run(`get-anthropic-credential-${nodeId}`, () => {
+  } else {
+    credential = await step.run(
+      `get-anthropic-credential-${nodeId}`,
+      () => {
         return prisma.credential.findUnique({
-            where: { id: data.credentialId, userId },
-        })
-    });
+          where: { id: data.credentialId, userId },
+        });
+      },
+    );
+  }
 
-    if (!credential) {
-        await publish(anthropicChatModelChannel().status({ nodeId, status: "error" }));
-        throw new NonRetriableError("Anthropic Chat Model Node: Credential not found");
+  if (!credential) {
+    await publish(
+      anthropicChatModelChannel().status({ nodeId, status: "error" }),
+    );
+    throw new NonRetriableError(
+      "Anthropic Chat Model Node: Credential not found",
+    );
+  }
+
+  const anthropic = createAnthropic({
+    apiKey: decrypt(credential.value),
+  });
+
+  try {
+    // Get messages directly from AI Agent if provided, else build them locally
+    let messages: ModelMessage[] = [];
+    if (context._agentMessages && Array.isArray(context._agentMessages)) {
+      // Prepend system prompt even when agent provides messages
+      messages = [
+        { role: "system", content: systemPrompt },
+        ...(context._agentMessages as ModelMessage[]),
+      ];
+    } else {
+      const chatHistory = (context._chatHistory as ChatMessageWithRole[]) || [];
+      messages = [
+        { role: "system", content: systemPrompt },
+        ...chatHistory.map(
+          (msg) =>
+            ({
+              role: msg.role as "user" | "assistant",
+              content: msg.content,
+            }) as ModelMessage,
+        ),
+        { role: "user", content: userPrompt },
+      ];
     }
 
-    const anthropic = createAnthropic({
-        apiKey: decrypt(credential.value),
-    });
+    // Get tools directly from AI Agent if provided
+    const mcpTools = context._agentTools as Record<string, unknown> | undefined;
 
-    // Track MCP cleanup function
-    let mcpCleanup: (() => Promise<void>) | null = null;
+    // Build generateText options
+    const generateTextOptions: Parameters<typeof generateText>[0] = {
+      model: anthropic(data.model || "claude-sonnet-4-20250514"),
+      messages,
+      experimental_telemetry: {
+        isEnabled: true,
+        recordInputs: true,
+        recordOutputs: true,
+      },
+    };
 
-    try {
-        // Get chat history with roles
-        const chatHistory = (context._chatHistory as ChatMessageWithRole[]) || [];
-
-        // Get MCP tools config if available from AI Agent
-        const mcpToolsConfig = context._mcpToolsConfig as McpToolsNodeConfig | undefined;
-
-        // Create MCP tools if config provided
-        let mcpTools: Record<string, unknown> | undefined;
-        let mcpToolNames: string[] = [];
-
-        if (mcpToolsConfig && (mcpToolsConfig.serverUrl || mcpToolsConfig.command)) {
-            try {
-                const config: McpToolsConfig = {
-                    transportType: mcpToolsConfig.transportType || 'stdio',
-                    serverUrl: mcpToolsConfig.serverUrl,
-                    command: mcpToolsConfig.command,
-                    args: mcpToolsConfig.args,
-                };
-                const result = await createNativeMcpTools(config);
-                mcpTools = result.tools;
-                mcpToolNames = result.toolNames || [];
-                mcpCleanup = result.cleanup;
-            } catch (error) {
-                throw error;
-            }
-        }
-
-        // Build messages with proper roles from history
-        const messages: CoreMessage[] = [
-            { role: 'system', content: systemPrompt },
-            ...chatHistory.map(msg => ({
-                role: msg.role as 'user' | 'assistant',
-                content: msg.content,
-            })),
-            { role: 'user', content: userPrompt },
-        ];
-
-        // Build generateText options
-        const generateTextOptions: Parameters<typeof generateText>[0] = {
-            model: anthropic(data.model || "claude-sonnet-4-20250514"),
-            messages,
-            experimental_telemetry: {
-                isEnabled: true,
-                recordInputs: true,
-                recordOutputs: true,
-            },
-        };
-
-        // Add tools if available
-        if (mcpTools && Object.keys(mcpTools).length > 0) {
-            (generateTextOptions as any).tools = mcpTools;
-            (generateTextOptions as any).maxSteps = 5;
-        }
-
-        const result = await generateText(generateTextOptions);
-
-        let text = result?.text ?? '';
-
-        if (!text && result?.toolResults && result.toolResults.length > 0) {
-            const toolResultTexts = result.toolResults.map((tr: unknown) => {
-                const toolResult = tr as Record<string, unknown>;
-                const res = toolResult.result ?? toolResult.output ?? toolResult.content ?? toolResult;
-                if (typeof res === 'string') return res;
-                if (res && typeof res === 'object') {
-                    if ('content' in res) {
-                        const content = (res as { content: Array<{ text?: string }> }).content;
-                        if (Array.isArray(content)) {
-                            return content.map(c => c.text || '').join('\n');
-                        }
-                    }
-                    if ('text' in res) {
-                        return (res as { text: string }).text;
-                    }
-                }
-                return JSON.stringify(res);
-            }).join('\n');
-            text = toolResultTexts || text;
-        }
-
-        // Cleanup MCP client after generateText completes
-        if (mcpCleanup) {
-            try {
-                await mcpCleanup();
-            } catch (e) {
-                throw e;
-            }
-        }
-        // Use unique step ID for publish
-        await step.run(`publish-anthropic-success-${nodeId}`, async () => {
-            await publish(
-                anthropicChatModelChannel().status({
-                    nodeId,
-                    status: "success",
-                }),
-            );
-        });
-
-        return {
-            ...context,
-            _chatModelResponse: text,
-            _mcpToolNames: mcpToolNames.length > 0 ? mcpToolNames : undefined,
-            _chatHistory: undefined,
-        };
-
-    } catch (error) {
-        // Cleanup MCP client on error
-        if (mcpCleanup) {
-            try {
-                await mcpCleanup();
-            } catch (e) {
-            }
-        }
-
-        await step.run(`publish-anthropic-error-${nodeId}`, async () => {
-            await publish(
-                anthropicChatModelChannel().status({
-                    nodeId,
-                    status: "error",
-                }),
-            );
-        });
-
-        throw new NonRetriableError("Anthropic Chat Model Node: Anthropic execution failed", {
-            cause: error,
-        });
+    // Add tools if available (no maxSteps, return immediately upon tool call)
+    if (mcpTools && Object.keys(mcpTools).length > 0) {
+      (generateTextOptions as any).tools = mcpTools;
     }
+
+    const result = await generateText(generateTextOptions);
+    const text = result?.text ?? "";
+    const toolCalls = result?.toolCalls ?? [];
+
+    // Publish success status
+    const publishSuccess = async () => {
+      await publish(
+        anthropicChatModelChannel().status({
+          nodeId,
+          status: "success",
+        }),
+      );
+    };
+    if (isAgentLoop) {
+      await publishSuccess();
+    } else {
+      await step.run(`publish-anthropic-success-${nodeId}`, publishSuccess);
+    }
+
+    return {
+      ...context,
+      _chatModelResponse: text,
+      _chatModelToolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+      _chatModelResponseMessages: result.response?.messages,
+      _chatHistory: undefined,
+    };
+  } catch (error) {
+    const publishError = async () => {
+      await publish(
+        anthropicChatModelChannel().status({
+          nodeId,
+          status: "error",
+        }),
+      );
+    };
+    if (isAgentLoop) {
+      await publishError();
+    } else {
+      await step.run(`publish-anthropic-error-${nodeId}`, publishError);
+    }
+
+    throw new NonRetriableError(
+      "Anthropic Chat Model Node: Anthropic execution failed",
+      {
+        cause: error,
+      },
+    );
+  }
 };

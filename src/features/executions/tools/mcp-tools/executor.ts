@@ -2,7 +2,7 @@ import type { NodeExecutor } from "@/features/executions/types";
 import { NonRetriableError } from "inngest";
 import Handlebars from "handlebars";
 import { mcpToolsChannel } from "@/inngest/channels/mcp-tools";
-import { createMcpToolsForAgent, type McpToolsConfig } from "./mcp-client";
+import { getMcpToolSchemas, executeMcpTool, type McpToolsConfig } from "./native-mcp-tools";
 
 Handlebars.registerHelper("json", (context) => {
     const jsonString = JSON.stringify(context);
@@ -58,12 +58,10 @@ export function getMcpConfigFromNodeData(data: McpToolsData): McpToolsConfig {
  * - Should not happen (MCP Tools must be connected to AI Agent)
  */
 export const mcpToolsExecutor: NodeExecutor<McpToolsData> = async ({ data, nodeId, context, step, publish }) => {
-    // Check if this is being called by the AI Agent
-    const isAgentRequest = context._isAgentToolsRequest === true;
+    const mcpMode = context._mcpMode as 'getSchemas' | 'executeTool' | undefined;
 
-    if (!isAgentRequest) {
+    if (!mcpMode) {
         // MCP Tools should only be executed through AI Agent
-        // If running independently, just return without action
         return context;
     }
 
@@ -78,8 +76,24 @@ export const mcpToolsExecutor: NodeExecutor<McpToolsData> = async ({ data, nodeI
     });
 
     try {
-        // Get the MCP config
         const mcpConfig = getMcpConfigFromNodeData(data);
+        
+        let resultContext = { ...context };
+
+        if (mcpMode === 'getSchemas') {
+            const schemasResult = await getMcpToolSchemas(mcpConfig);
+            resultContext._mcpToolSchemas = schemasResult.tools;
+            resultContext._mcpToolNames = schemasResult.toolNames;
+            resultContext._mcpCleanup = schemasResult.cleanup;
+        } else if (mcpMode === 'executeTool') {
+            const toolName = context._mcpToolName as string;
+            const toolArgs = context._mcpToolArgs as Record<string, unknown>;
+            if (!toolName) {
+                 throw new Error("Missing _mcpToolName in context for executeTool mode");
+            }
+            const toolResultString = await executeMcpTool(mcpConfig, toolName, toolArgs);
+            resultContext._mcpToolResult = toolResultString;
+        }
 
         // Publish success status
         await step.run(`publish-mcp-success-${nodeId}`, async () => {
@@ -91,11 +105,7 @@ export const mcpToolsExecutor: NodeExecutor<McpToolsData> = async ({ data, nodeI
             );
         });
 
-        // Return the config for the AI Agent and chat model to use
-        return {
-            ...context,
-            _mcpToolsConfig: mcpConfig,
-        };
+        return resultContext;
 
     } catch (error) {
         await step.run(`publish-mcp-error-exec-${nodeId}`, async () => {
